@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pinq/screens/add_place.dart';
 import 'package:pinq/widgets/places_list.dart';
 
 class PlacesScreen extends StatelessWidget {
@@ -12,11 +13,19 @@ class PlacesScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AddPlaceScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: PlacesList(places: [],),
+      body: PlacesList(
+        places: [],
+      ),
     );
   }
 }
