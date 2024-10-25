@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pinq/screens/authentication.dart';
 import 'package:pinq/screens/places.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   brightness: Brightness.dark,
-  seedColor: const Color.fromARGB(255, 102, 6, 247),
-  background: const Color.fromARGB(255, 56, 49, 66),
+  seedColor: Color.fromARGB(255, 247, 6, 131),
+  background: Color.fromARGB(255, 97, 0, 57),
 );
 
 final theme = ThemeData.from(
   colorScheme: colorScheme,
   textTheme: GoogleFonts.ubuntuCondensedTextTheme(
     const TextTheme(
-      titleSmall: TextStyle(fontWeight: FontWeight.bold),
-      titleMedium: TextStyle(fontWeight: FontWeight.bold),
-      titleLarge: TextStyle(fontWeight: FontWeight.bold),
+      titleSmall: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+      titleMedium: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+      titleLarge: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white),
+      bodySmall: TextStyle(color: Colors.white),
+      labelLarge: TextStyle(color: Colors.white),
+      labelMedium: TextStyle(color: Colors.white),
+      labelSmall: TextStyle(color: Colors.white),
+      
     ),
   ),
 ).copyWith(
@@ -33,7 +41,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'pinq',
       theme: theme,
-      home: const PlacesScreen(),
+      home: const AuthScreen(),
     );
   }
 }
