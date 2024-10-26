@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pinq/widgets/shiny_button.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -8,6 +9,8 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  var _isLogin = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,12 +31,11 @@ class _AuthScreenState extends State<AuthScreen> {
                   'pinq',
                   style: Theme.of(context).textTheme.titleLarge!.copyWith(
                         fontSize: 70,
-                        color: Color.fromARGB(255, 255, 0, 195),
                       ),
                 ),
               ),
               Card(
-                color: Color.fromARGB(255, 255, 0, 195),
+                color: Color.fromARGB(255, 255, 221, 0),
                 margin: const EdgeInsets.all(20),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -64,6 +66,24 @@ class _AuthScreenState extends State<AuthScreen> {
                                 .copyWith(fontSize: 20),
                           ),
                           obscureText: true,
+                        ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        ShinyButton(
+                          
+                          onPressed: () {},
+                          text: _isLogin ? 'Login' : 'Signup',
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _isLogin = !_isLogin;
+                            });
+                          },
+                          child: Text(_isLogin
+                              ? 'Create an account'
+                              : 'I already have an account.'),
                         ),
                       ],
                     ),

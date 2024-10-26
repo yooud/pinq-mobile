@@ -10,24 +10,27 @@ final colorScheme = ColorScheme.fromSeed(
 );
 
 final theme = ThemeData.from(
-  colorScheme: colorScheme,
-  textTheme: GoogleFonts.ubuntuCondensedTextTheme(
-    const TextTheme(
-      titleSmall: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-      titleMedium: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-      titleLarge: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white),
-      bodySmall: TextStyle(color: Colors.white),
-      labelLarge: TextStyle(color: Colors.white),
-      labelMedium: TextStyle(color: Colors.white),
-      labelSmall: TextStyle(color: Colors.white),
-      
-    ),
+  colorScheme: colorScheme.copyWith(
+    onSurface: Colors.white,
+  ),
+  textTheme: GoogleFonts.ubuntuCondensedTextTheme().apply(
+    bodyColor: Colors.white,
+    displayColor: Colors.white,
   ),
 ).copyWith(
   scaffoldBackgroundColor: colorScheme.background,
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      foregroundColor: Colors.white,
+    ),
+  ),
+  textButtonTheme: TextButtonThemeData(
+    style: TextButton.styleFrom(
+      foregroundColor: Colors.white,
+    ),
+  ),
 );
+
 
 void main() {
   runApp(const MyApp());
