@@ -17,17 +17,29 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -40,53 +52,11 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBuqpElC_1QAsocdTzAjyQR7BQ9cdWdpgg',
-    appId: '1:177364627963:web:646878e80ed0c38d191b5e',
-    messagingSenderId: '177364627963',
-    projectId: 'pinq-nure',
-    authDomain: 'pinq-nure.firebaseapp.com',
-    storageBucket: 'pinq-nure.appspot.com',
-    measurementId: 'G-SM27J8XECL',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBidZrgT16tIUiAqKzP5FH4cLNTZHMfQJE',
-    appId: '1:177364627963:android:0cda20386465a314191b5e',
+    appId: '1:177364627963:android:f65b714cd397c62e191b5e',
     messagingSenderId: '177364627963',
     projectId: 'pinq-nure',
     storageBucket: 'pinq-nure.appspot.com',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDZPfnFFHh5kBlPQWwirB43Dp7_ipibdYw',
-    appId: '1:177364627963:ios:fd89ecc7067a51e2191b5e',
-    messagingSenderId: '177364627963',
-    projectId: 'pinq-nure',
-    storageBucket: 'pinq-nure.appspot.com',
-    iosClientId:
-        '177364627963-n4qcbl8gean6e2rs7h2lfn43lko0ak99.apps.googleusercontent.com',
-    iosBundleId: 'com.example.pinq',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDZPfnFFHh5kBlPQWwirB43Dp7_ipibdYw',
-    appId: '1:177364627963:ios:fd89ecc7067a51e2191b5e',
-    messagingSenderId: '177364627963',
-    projectId: 'pinq-nure',
-    storageBucket: 'pinq-nure.appspot.com',
-    iosClientId:
-        '177364627963-n4qcbl8gean6e2rs7h2lfn43lko0ak99.apps.googleusercontent.com',
-    iosBundleId: 'com.example.pinq',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBuqpElC_1QAsocdTzAjyQR7BQ9cdWdpgg',
-    appId: '1:177364627963:web:791c1cf0327a8780191b5e',
-    messagingSenderId: '177364627963',
-    projectId: 'pinq-nure',
-    authDomain: 'pinq-nure.firebaseapp.com',
-    storageBucket: 'pinq-nure.appspot.com',
-    measurementId: 'G-Y0QSXLGRWX',
   );
 }
