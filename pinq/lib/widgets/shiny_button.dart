@@ -4,11 +4,10 @@ class ShinyButton extends StatefulWidget {
   final VoidCallback onPressed;
   final String text;
 
-  const ShinyButton({Key? key, required this.onPressed, required this.text})
-      : super(key: key);
+  const ShinyButton({super.key, required this.onPressed, required this.text});
 
   @override
-  _ShinyButtonState createState() => _ShinyButtonState();
+  State<ShinyButton> createState() => _ShinyButtonState();
 }
 
 class _ShinyButtonState extends State<ShinyButton>
@@ -21,7 +20,7 @@ class _ShinyButtonState extends State<ShinyButton>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..repeat();
   }
 
   @override
@@ -32,11 +31,9 @@ class _ShinyButtonState extends State<ShinyButton>
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
+    return TextButton(
+      style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
       ),
       onPressed: widget.onPressed,
       child: AnimatedBuilder(
@@ -46,13 +43,13 @@ class _ShinyButtonState extends State<ShinyButton>
             shaderCallback: (Rect bounds) {
               return LinearGradient(
                 colors: [
-                  const Color.fromARGB(255, 255, 140, 178),
-                  Color.fromARGB(255, 255, 0, 242),
-                  const Color.fromARGB(255, 255, 0, 85)
+                  Theme.of(context).colorScheme.primary,
+                  const Color.fromARGB(255, 255, 0, 242),
+                  Theme.of(context).colorScheme.primary,
                 ],
-                stops: [0.0, 0.5, 1.0],
-                begin: Alignment(-1.0 + _controller.value * 2, 0.0),
-                end: Alignment(0.5 + _controller.value * 2, 0.0),
+                stops: const [0.0, 0.5, 1.0],
+                begin: Alignment(-3 + _controller.value * 4, 0.0),
+                end: Alignment(-1 + _controller.value * 4, 0.0),
               ).createShader(bounds);
             },
             child: child,

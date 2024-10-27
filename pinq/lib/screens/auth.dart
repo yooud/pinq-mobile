@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pinq/widgets/shiny_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+final _firebase = FirebaseAuth.instance;
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -9,7 +12,43 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final _form = GlobalKey<FormState>();
   var _isLogin = true;
+  var _enteredEmail = '';
+  var _enteredPassword = '';
+
+  void _submit() async {
+    final isValid = _form.currentState!.validate();
+
+    if (!isValid) {
+      return;
+    }
+
+    _form.currentState!.save();
+    if (_isLogin) {
+      //login logic
+    }
+    if (!_isLogin) {
+      try {
+        final userCredentials = await _firebase.createUserWithEmailAndPassword(
+          email: _enteredEmail,
+          password: _enteredPassword,
+        );
+        print(userCredentials); 
+      } on FirebaseAuthException catch (error) {
+        if(error.code == 'email-already-in-use'){
+          
+        }
+
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message ?? 'Authentication failed.'),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +74,12 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               Card(
-                color: Color.fromARGB(255, 255, 221, 0),
+                color: const Color.fromARGB(255, 30, 30, 30),
                 margin: const EdgeInsets.all(20),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Form(
+                    key: _form,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -55,24 +95,42 @@ class _AuthScreenState extends State<AuthScreen> {
                           keyboardType: TextInputType.emailAddress,
                           autocorrect: false,
                           textCapitalization: TextCapitalization.none,
+                          validator: (value) {
+                            if (value == null ||
+                                value.trim().isEmpty ||
+                                !value.contains('@')) {
+                              return 'Please enter a valid email address.';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredEmail = value!;
+                          },
                         ),
                         TextFormField(
-                          style: Theme.of(context).textTheme.titleMedium,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: Theme.of(context)
-                                .textTheme
-                                .labelMedium!
-                                .copyWith(fontSize: 20),
-                          ),
-                          obscureText: true,
-                        ),
+                            style: Theme.of(context).textTheme.titleMedium,
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              labelStyle: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium!
+                                  .copyWith(fontSize: 20),
+                            ),
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.trim().length < 8) {
+                                return 'Password must be at least 8 characters long.';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _enteredPassword = value!;
+                            }),
                         const SizedBox(
                           height: 12,
                         ),
                         ShinyButton(
-                          
-                          onPressed: () {},
+                          onPressed: _submit,
                           text: _isLogin ? 'Login' : 'Signup',
                         ),
                         TextButton(
