@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pinq/screens/auth.dart';
+import 'package:pinq/screens/splash.dart';
+import 'package:pinq/screens/start_screen.dart';
 import 'package:pinq/screens/places.dart';
 
 import 'package:flutter/material.dart';
@@ -51,7 +54,19 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'pinq',
       theme: theme,
-      home: const AuthScreen(),
+      home: StreamBuilder(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SplashScreen();
+          }
+
+          if (snapshot.hasData) {
+            return const StartScreen();
+          }
+          return const AuthScreen();
+        },
+      ),
     );
   }
 }
