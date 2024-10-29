@@ -30,7 +30,11 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-pinq/android/app/google-services.json
+
+/android/app/google-services.json
+.env
+/.vscode
+firebase.json
 
 # Symbolication related
 app.*.symbols
