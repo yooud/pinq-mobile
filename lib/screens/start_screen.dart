@@ -1,4 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:pinq/widgets/main_drawer.dart';
@@ -18,14 +22,18 @@ class _StartScreenState extends State<StartScreen> {
 
     geo.Position position = await _determinePosition();
 
-    print(position.longitude);
-    print(position.latitude);
+    Uint8List imageData =
+        await loadImageAsUint8List('assets/google_icon.png', 150, 150);
 
     mapboxMap.location.updateSettings(
       map.LocationComponentSettings(
         enabled: true,
+        locationPuck: map.LocationPuck(
+          locationPuck2D: map.LocationPuck2D(
+            topImage: imageData,
+          ),
+        ),
       ),
-
     );
 
     mapboxMap.easeTo(
@@ -69,6 +77,21 @@ class _StartScreenState extends State<StartScreen> {
     }
 
     return await geo.Geolocator.getCurrentPosition();
+  }
+
+  Future<Uint8List> loadImageAsUint8List(
+      String assetPath, int width, int height) async {
+    ByteData data = await rootBundle.load(assetPath);
+    Uint8List list = data.buffer.asUint8List();
+
+    Uint8List resizedImage = await FlutterImageCompress.compressWithList(
+      list,
+      minWidth: width,
+      minHeight: height,
+      format: CompressFormat.png,
+    );
+
+    return resizedImage;
   }
 
   @override
