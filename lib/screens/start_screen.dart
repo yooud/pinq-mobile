@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbox;
-import 'package:geolocator/geolocator.dart' as glr;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:pinq/widgets/main_drawer.dart';
 
 class StartScreen extends StatefulWidget {
@@ -11,56 +11,64 @@ class StartScreen extends StatefulWidget {
 }
 
 class _StartScreenState extends State<StartScreen> {
-  mbox.MapboxMap? mapboxMap;
+  map.MapboxMap? mapboxMap;
 
-  _onMapCreated(mbox.MapboxMap mapboxMap) async {
+  _onMapCreated(map.MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
 
-    glr.Position position = await _determinePosition();
+    geo.Position position = await _determinePosition();
 
     print(position.longitude);
     print(position.latitude);
 
+    mapboxMap.location.updateSettings(
+      map.LocationComponentSettings(
+        enabled: true,
+      ),
+
+    );
+
     mapboxMap.easeTo(
-      mbox.CameraOptions(
-          center: mbox.Point(
-              coordinates: mbox.Position(
+      map.CameraOptions(
+          center: map.Point(
+              coordinates: map.Position(
             position.longitude,
             position.latitude,
           )),
           zoom: 16,
           bearing: 0,
-          pitch: 3),
-      mbox.MapAnimationOptions(duration: 2000, startDelay: 0),
+          pitch: 15),
+      map.MapAnimationOptions(duration: 1000, startDelay: 0),
     );
   }
 
-  Future<glr.Position> _determinePosition() async {
+  Future<geo.Position> _determinePosition() async {
     bool serviceEnabled;
-    glr.LocationPermission permission;
+    geo.LocationPermission permission;
 
-    serviceEnabled = await glr.Geolocator.isLocationServiceEnabled();
+    serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       print('Location services are disabled.');
       return Future.error('Location services are disabled.');
     }
 
-    permission = await glr.Geolocator.checkPermission();
-    if (permission == glr.LocationPermission.denied) {
-      permission = await glr.Geolocator.requestPermission();
-      if (permission == glr.LocationPermission.denied) {
+    permission = await geo.Geolocator.checkPermission();
+    if (permission == geo.LocationPermission.denied) {
+      permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied) {
         print('Location permissions are denied.');
         return Future.error('Location permissions are denied');
       }
     }
 
-    if (permission == glr.LocationPermission.deniedForever) {
-      print('Location permissions are permanently denied, we cannot request permissions.');
+    if (permission == geo.LocationPermission.deniedForever) {
+      print(
+          'Location permissions are permanently denied, we cannot request permissions.');
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
     }
 
-    return await glr.Geolocator.getCurrentPosition();
+    return await geo.Geolocator.getCurrentPosition();
   }
 
   @override
@@ -69,7 +77,7 @@ class _StartScreenState extends State<StartScreen> {
       appBar: AppBar(
         title: const Text('pinq'),
       ),
-      body: mbox.MapWidget(
+      body: map.MapWidget(
         key: const ValueKey('mapWidget'),
         onMapCreated: _onMapCreated,
       ),
