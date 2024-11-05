@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:pinq/screens/settings_screen.dart';
 import 'package:pinq/widgets/main_drawer.dart';
 
 class StartScreen extends StatefulWidget {
@@ -94,6 +95,17 @@ class _StartScreenState extends State<StartScreen> {
     return resizedImage;
   }
 
+    void _setScreen(String identifier) async {
+    Navigator.of(context).pop();
+    if (identifier == 'settings') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => const SettingsScreen(),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +117,7 @@ class _StartScreenState extends State<StartScreen> {
         onMapCreated: _onMapCreated,
       ),
       drawer: HamburgerMenu(
-        onSelectScreen: (identifier) {},
+        onSelectScreen: _setScreen,
       ),
     );
   }
