@@ -12,7 +12,7 @@ class HamburgerMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF432B55),
+      backgroundColor: Theme.of(context).colorScheme.onSecondary,
       child: Column(
         children: [
           DrawerHeader(

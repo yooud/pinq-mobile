@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/screens/auth_screen.dart';
 import 'package:pinq/screens/splash_screen.dart';
 import 'package:pinq/screens/start_screen.dart';
@@ -10,11 +11,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-
 final colorScheme = ColorScheme.fromSeed(
   brightness: Brightness.dark,
   seedColor: Color.fromARGB(255, 247, 6, 131),
-  background: Color.fromARGB(255, 97, 0, 57),
+  surface: Color.fromARGB(255, 97, 0, 57),
 );
 
 final theme = ThemeData.from(
@@ -26,7 +26,7 @@ final theme = ThemeData.from(
     displayColor: Colors.white,
   ),
 ).copyWith(
-  scaffoldBackgroundColor: colorScheme.background,
+  scaffoldBackgroundColor: colorScheme.surface,
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       foregroundColor: Colors.white,
@@ -47,8 +47,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

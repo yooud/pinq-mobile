@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final _firebase = FirebaseAuth.instance;
 
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _form = GlobalKey<FormState>();
   var _isLogin = true;
   var _enteredEmail = '';
@@ -30,6 +32,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     UserCredential userCredential =
         await _firebase.signInWithCredential(credential);
+
+    ref
+        .read(userProvider.notifier)
+        .setUserByGoogle(userCredential.user!.email!);
   }
 
   void _submit() async {

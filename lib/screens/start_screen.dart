@@ -1,25 +1,39 @@
-import 'dart:typed_data';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:pinq/screens/settings_screen.dart';
+import 'package:pinq/providers/user_provider.dart';
+import 'package:pinq/screens/profile_screen.dart';
 import 'package:pinq/widgets/main_drawer.dart';
 
-class StartScreen extends StatefulWidget {
+class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
 
   @override
-  State<StartScreen> createState() => _StartScreenState();
+  ConsumerState<StartScreen> createState() => _StartScreenState();
 }
 
-class _StartScreenState extends State<StartScreen> {
+class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
 
   _onMapCreated(map.MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
+
+    mapboxMap.compass.updateSettings(
+      map.CompassSettings(enabled: false),
+    );
+    mapboxMap.scaleBar.updateSettings(
+      map.ScaleBarSettings(enabled: false),
+    );
+
+    if (ref.read(userProvider) == null) {
+      ref
+          .read(userProvider.notifier)
+          .setUserByGoogle(FirebaseAuth.instance.currentUser!.email!);
+    }
 
     geo.Position position = await _determinePosition();
 
@@ -95,29 +109,60 @@ class _StartScreenState extends State<StartScreen> {
     return resizedImage;
   }
 
-    void _setScreen(String identifier) async {
+  void _setScreen(String identifier) async {
     Navigator.of(context).pop();
     if (identifier == 'settings') {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (ctx) => const SettingsScreen(),
+          builder: (ctx) => const ProfileScreen(),
         ),
       );
     }
   }
 
+  void _openProfileOverlay() {
+    showModalBottomSheet(
+      useSafeArea: true,
+      isScrollControlled: true,
+      context: context,
+      builder: (ctx) => const ProfileScreen(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('pinq'),
-      ),
-      body: map.MapWidget(
-        key: const ValueKey('mapWidget'),
-        onMapCreated: _onMapCreated,
-      ),
-      drawer: HamburgerMenu(
-        onSelectScreen: _setScreen,
+    return SafeArea(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            map.MapWidget(
+              key: const ValueKey('mapWidget'),
+              onMapCreated: _onMapCreated,
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Material(
+                color: const Color.fromARGB(155, 255, 170, 198),
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: _openProfileOverlay,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.account_circle,
+                      size: 32,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        drawer: HamburgerMenu(
+          onSelectScreen: _setScreen,
+        ),
       ),
     );
   }

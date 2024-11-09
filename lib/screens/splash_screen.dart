@@ -5,11 +5,8 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('pinq'),
-      ),
-      body: const Center(
+    return const Scaffold(
+      body:  Center(
         child: SizedBox(
           height: 30,
           width: 30,
