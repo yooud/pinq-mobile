@@ -35,7 +35,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     ref
         .read(userProvider.notifier)
-        .setUserByGoogle(userCredential.user!.email!);
+        .setUserByGoogle(userCredential.user!.email!, userCredential.user!.photoURL!,);
   }
 
   void _submit() async {
@@ -127,24 +127,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           },
                         ),
                         TextFormField(
-                            style: Theme.of(context).textTheme.titleMedium,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              labelStyle: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium!
-                                  .copyWith(fontSize: 20),
-                            ),
-                            obscureText: true,
-                            validator: (value) {
-                              if (value == null || value.trim().length < 8) {
-                                return 'Password must be at least 8 characters long.';
-                              }
-                              return null;
-                            },
-                            onSaved: (value) {
-                              _enteredPassword = value!;
-                            }),
+                          style: Theme.of(context).textTheme.titleMedium,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            labelStyle: Theme.of(context)
+                                .textTheme
+                                .labelMedium!
+                                .copyWith(fontSize: 20),
+
+                          ),
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.trim().length < 8) {
+                              return 'Password must be at least 8 characters long.';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredPassword = value!;
+                          },
+                        ),
                         const SizedBox(
                           height: 12,
                         ),
@@ -162,25 +164,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ? 'Create an account'
                               : 'I already have an account.'),
                         ),
-                        Visibility(
-                          visible: _isLogin,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              _signInWithGoogle();
-                            },
-                            icon: Image.asset(
-                              'assets/google_icon.png',
-                              height: 30.0,
-                              width: 30.0,
-                            ),
-                            label: const Text(
-                              'Sign in with Google',
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12.0, horizontal: 24.0),
-                              elevation: 3.0,
-                            ),
+                        TextButton.icon(
+                          onPressed: () {
+                            _signInWithGoogle();
+                          },
+                          icon: Image.asset(
+                            'assets/google_icon.png',
+                            height: 30.0,
+                            width: 30.0,
+                          ),
+                          label: const Text(
+                            'Sign in with Google',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 24.0),
+                            elevation: 3.0,
                           ),
                         ),
                       ],

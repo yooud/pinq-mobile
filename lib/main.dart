@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/screens/auth_screen.dart';
 import 'package:pinq/screens/splash_screen.dart';
 import 'package:pinq/screens/start_screen.dart';
@@ -13,20 +14,18 @@ import 'firebase_options.dart';
 
 final colorScheme = ColorScheme.fromSeed(
   brightness: Brightness.dark,
-  seedColor: Color.fromARGB(255, 247, 6, 131),
-  surface: Color.fromARGB(255, 97, 0, 57),
+  seedColor: ourPinkColor,
+  onSurface: Colors.white,
+  surface: ourDarkColor,
 );
 
 final theme = ThemeData.from(
-  colorScheme: colorScheme.copyWith(
-    onSurface: Colors.white,
-  ),
+  colorScheme: colorScheme,
   textTheme: GoogleFonts.ubuntuCondensedTextTheme().apply(
     bodyColor: Colors.white,
     displayColor: Colors.white,
   ),
 ).copyWith(
-  scaffoldBackgroundColor: colorScheme.surface,
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       foregroundColor: Colors.white,

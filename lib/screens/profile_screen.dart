@@ -1,7 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pinq/models/user.dart';
+import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/providers/user_provider.dart';
 import 'dart:io';
 
@@ -15,8 +16,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  File? _image;
-
   Future<void> _openAvatarSelection() async {
     final ImagePicker picker = ImagePicker();
 
@@ -45,11 +44,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
+    // if (pickedFile != null) {
+    //   setState(() {
+    //     _image = File(pickedFile.path);
+    //   });
+    // }
   }
 
   @override
@@ -70,29 +69,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       style: const TextStyle(fontSize: 30),
                     ),
                     ShinyButton(
-                        onPressed: () {},
-                        text: 'username',
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 255, 170, 198),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      onPressed: () {},
+                      text: 'username',
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ourPinkColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
-                        colors: [
-                          Colors.white,
-                          const Color.fromARGB(255, 255, 170, 198),
-                          Colors.white,
-                        ],)
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                      ),
+                      colors: [
+                        ourDarkColor,
+                        Colors.white,
+                        ourDarkColor,
+                      ],
+                    )
                   ],
                 ),
                 GestureDetector(
                   onTap: _openAvatarSelection,
                   child: CircleAvatar(
-                    backgroundImage: _image != null ? FileImage(_image!) : null,
+                    backgroundImage: ref.read(userProvider)!.logoUrl == null
+                        ? null
+                        : NetworkImage(ref.read(userProvider)!.logoUrl!),
                     radius: 50,
-                    backgroundColor: const Color.fromARGB(255, 255, 170, 198),
+                    backgroundColor: ourPinkColor,
                   ),
                 ),
               ],

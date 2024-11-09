@@ -7,7 +7,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/profile_screen.dart';
-import 'package:pinq/widgets/main_drawer.dart';
+import 'package:pinq/screens/settings_screen.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -30,9 +30,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
 
     if (ref.read(userProvider) == null) {
-      ref
-          .read(userProvider.notifier)
-          .setUserByGoogle(FirebaseAuth.instance.currentUser!.email!);
+      ref.read(userProvider.notifier).setUserByGoogle(
+            FirebaseAuth.instance.currentUser!.email!,
+            FirebaseAuth.instance.currentUser!.photoURL!,
+          );
     }
 
     geo.Position position = await _determinePosition();
@@ -125,7 +126,18 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
+      backgroundColor: Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => const ProfileScreen(),
+    );
+  }
+
+  void _openSettingseOverlay() {
+    showModalBottomSheet(
+      useSafeArea: true,
+      isScrollControlled: true,
+      context: context,
+      backgroundColor: Color.fromARGB(255, 30, 30, 30),
+      builder: (ctx) => const SettingsScreen(),
     );
   }
 
@@ -144,7 +156,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
               right: 16,
               child: Material(
                 color: const Color.fromARGB(155, 255, 170, 198),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: InkWell(
                   onTap: _openProfileOverlay,
                   child: const Padding(
@@ -158,10 +170,26 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 ),
               ),
             ),
+            Positioned(
+              top: 80,
+              right: 16,
+              child: Material(
+                color: const Color.fromARGB(155, 255, 170, 198),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: _openSettingseOverlay,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.settings_sharp,
+                      size: 32,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
-        ),
-        drawer: HamburgerMenu(
-          onSelectScreen: _setScreen,
         ),
       ),
     );
