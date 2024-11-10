@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,6 +20,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   void _signInWithGoogle() async {
     GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
@@ -33,9 +36,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     UserCredential userCredential =
         await _firebase.signInWithCredential(credential);
 
-    ref
-        .read(userProvider.notifier)
-        .setUserByGoogle(userCredential.user!.email!, userCredential.user!.photoURL!,);
+    ref.read(userProvider.notifier).setUserByGoogle(
+          userCredential.user!.email!,
+          userCredential.user!.photoURL!,
+        );
   }
 
   void _submit() async {
@@ -105,11 +109,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         TextFormField(
                           style: Theme.of(context).textTheme.titleMedium,
                           decoration: InputDecoration(
-                            labelText: 'Email Address',
-                            labelStyle: Theme.of(context)
+                            hintText: 'Email Address',
+                            hintStyle: Theme.of(context)
                                 .textTheme
                                 .labelMedium!
                                 .copyWith(fontSize: 20),
+                            border: const OutlineInputBorder(),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: ourPinkColor),
+                            ),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           autocorrect: false,
@@ -126,17 +134,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             _enteredEmail = value!;
                           },
                         ),
+                        const SizedBox(
+                          height: 5,
+                        ),
                         TextFormField(
                           style: Theme.of(context).textTheme.titleMedium,
+                          obscureText: true,
+                          controller: _passwordController,
                           decoration: InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: Theme.of(context)
+                            hintText: 'Password',
+                            hintStyle: Theme.of(context)
                                 .textTheme
                                 .labelMedium!
                                 .copyWith(fontSize: 20),
-
+                            border: const OutlineInputBorder(),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: ourPinkColor),
+                            ),
                           ),
-                          obscureText: true,
                           validator: (value) {
                             if (value == null || value.trim().length < 8) {
                               return 'Password must be at least 8 characters long.';
@@ -146,6 +161,38 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           onSaved: (value) {
                             _enteredPassword = value!;
                           },
+                        ),
+                        Visibility(
+                          visible: !_isLogin,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: TextFormField(
+                              style: Theme.of(context).textTheme.titleMedium,
+                              obscureText: true,
+                              controller: _confirmPasswordController,
+                              decoration: InputDecoration(
+                                hintText: 'Password',
+                                hintStyle: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium!
+                                    .copyWith(fontSize: 20),
+                                border: const OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: ourPinkColor),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (_isLogin) {
+                                  return null;
+                                }
+                                if (value == null ||
+                                    value.trim() != _passwordController.text) {
+                                  return 'Passwords do not match.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
                         ),
                         const SizedBox(
                           height: 12,
@@ -157,6 +204,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         TextButton(
                           onPressed: () {
                             setState(() {
+                              _passwordController.clear();
+                              _confirmPasswordController.clear();
                               _isLogin = !_isLogin;
                             });
                           },
@@ -192,5 +241,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 }
