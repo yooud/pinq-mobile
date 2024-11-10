@@ -7,6 +7,11 @@ class UserNotifier extends StateNotifier<User?> {
   void setUserByGoogle(String email, String logoUrl) {
     state = User(email: email, logoUrl: logoUrl);
   }
+
+  void setUserFinalData(String displayName, String username) {
+    state!.displayName = displayName;
+    state!.username = username;
+  }
 }
 
 final userProvider = StateNotifierProvider<UserNotifier, User?>(

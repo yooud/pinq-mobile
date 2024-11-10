@@ -65,19 +65,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ref.read(userProvider)!.email,
+                      ref.read(userProvider)!.displayName ?? 'displayName',
                       style: const TextStyle(fontSize: 30),
                     ),
                     ShinyButton(
                       onPressed: () {},
-                      text: 'username',
+                      text: ref.read(userProvider)!.username ?? 'username',
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ourPinkColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                         padding:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                       ),
                       colors: [
                         ourDarkColor,

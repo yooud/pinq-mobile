@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/profile_screen.dart';
 import 'package:pinq/screens/settings_screen.dart';
+import 'package:pinq/widgets/finish_auth.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -18,6 +19,30 @@ class StartScreen extends ConsumerStatefulWidget {
 
 class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
+
+    @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (FirebaseAuth.instance.currentUser != null) {
+        _showOnboardingDialog();
+      }
+    });
+  }
+
+    void _showOnboardingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          
+          backgroundColor: Colors.transparent,
+          child: FinishAuth(),
+        );
+      },
+    );
+  }
 
   _onMapCreated(map.MapboxMap mapboxMap) async {
     this.mapboxMap = mapboxMap;
