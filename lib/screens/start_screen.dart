@@ -20,23 +20,23 @@ class StartScreen extends ConsumerStatefulWidget {
 class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
 
-    @override
+  @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (FirebaseAuth.instance.currentUser != null) {
+        await ref.read(userProvider.notifier).initializeUser();
         _showOnboardingDialog();
       }
     });
   }
 
-    void _showOnboardingDialog() {
+  void _showOnboardingDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return const Dialog(
-          
           backgroundColor: Colors.transparent,
           child: FinishAuth(),
         );
@@ -53,13 +53,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     mapboxMap.scaleBar.updateSettings(
       map.ScaleBarSettings(enabled: false),
     );
-
-    if (ref.read(userProvider) == null) {
-      ref.read(userProvider.notifier).setUserByGoogle(
-            FirebaseAuth.instance.currentUser!.email!,
-            FirebaseAuth.instance.currentUser!.photoURL!,
-          );
-    }
 
     geo.Position position = await _determinePosition();
 

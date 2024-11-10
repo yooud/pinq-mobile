@@ -33,13 +33,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       idToken: googleAuth?.idToken,
     );
 
-    UserCredential userCredential =
-        await _firebase.signInWithCredential(credential);
-
-    ref.read(userProvider.notifier).setUserByGoogle(
-          userCredential.user!.email!,
-          userCredential.user!.photoURL!,
-        );
+    
+    await _firebase.signInWithCredential(credential);
   }
 
   void _submit() async {
@@ -171,7 +166,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               obscureText: true,
                               controller: _confirmPasswordController,
                               decoration: InputDecoration(
-                                hintText: 'Password',
+                                hintText: 'Confirm Password',
                                 hintStyle: Theme.of(context)
                                     .textTheme
                                     .labelMedium!

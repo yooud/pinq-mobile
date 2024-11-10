@@ -1,19 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/user.dart';
+import 'package:pinq/services/api_service.dart';
 
 class UserNotifier extends StateNotifier<User?> {
-  UserNotifier() : super(null);
+  final Ref ref;
 
-  void setUserByGoogle(String email, String logoUrl) {
-    state = User(email: email, logoUrl: logoUrl);
-  }
+  UserNotifier(this.ref) : super(null);
 
-  void setUserFinalData(String displayName, String username) {
-    state!.displayName = displayName;
-    state!.username = username;
+  Future<void> initializeUser() async {
+    final apiService = ref.read(apiServiceProvider);
+
+    try {
+      await apiService.initializeTokens();
+
+      final userData = await apiService.getUserData();
+      state = userData as User?;
+    } catch (e) {
+      print(e.toString());
+    }
   }
 }
 
 final userProvider = StateNotifierProvider<UserNotifier, User?>(
-  (ref) => UserNotifier(),
+  (ref) => UserNotifier(ref),
 );

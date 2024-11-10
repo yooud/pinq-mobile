@@ -116,7 +116,6 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    ref.read(userProvider.notifier).setUserFinalData(displayName, username);
                     _complete();
                   },
                   child: const Text("Finish"),
