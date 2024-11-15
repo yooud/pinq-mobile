@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pinq/models/our_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -27,12 +28,15 @@ class _ProfileScreenState extends ConsumerState<SettingsScreen> {
                     onPressed: () async {
                       Navigator.of(context).pop();
                       await GoogleSignIn().signOut();
-                      FirebaseAuth.instance.signOut();
+                      await FirebaseAuth.instance.signOut();
+
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.remove('x-session-id');
                     },
                     style: ElevatedButton.styleFrom(
-                        alignment: Alignment.centerLeft,backgroundColor: ourDarkColor,),
-
-          
+                      alignment: Alignment.centerLeft,
+                      backgroundColor: ourDarkColor,
+                    ),
                     child: Text(
                       'Exit an account',
                       style: Theme.of(context).textTheme.bodyLarge,

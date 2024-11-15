@@ -23,12 +23,18 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (FirebaseAuth.instance.currentUser != null) {
+  }
+
+  Future<bool> _isUserStateComplete() async {
+    try {
+      if (await ref.read(userProvider.notifier).isRegistraionCompleted()) {
         await ref.read(userProvider.notifier).initializeUser();
-        _showOnboardingDialog();
+        return true;
       }
-    });
+      return false;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   void _showOnboardingDialog() {
@@ -54,7 +60,13 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       map.ScaleBarSettings(enabled: false),
     );
 
-    geo.Position position = await _determinePosition();
+    try {
+      if (!(await _isUserStateComplete())) {
+        _showOnboardingDialog();
+      }
+    } catch (e) {
+      return;
+    }
 
     Uint8List imageData =
         await loadImageAsUint8List('assets/google_icon.png', 150, 150);
@@ -69,6 +81,8 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         ),
       ),
     );
+
+    geo.Position position = await _determinePosition();
 
     mapboxMap.easeTo(
       map.CameraOptions(
@@ -126,17 +140,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
 
     return resizedImage;
-  }
-
-  void _setScreen(String identifier) async {
-    Navigator.of(context).pop();
-    if (identifier == 'settings') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (ctx) => const ProfileScreen(),
-        ),
-      );
-    }
   }
 
   void _openProfileOverlay() {

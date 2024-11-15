@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
+import 'package:pinq/models/user.dart';
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 
@@ -23,7 +24,13 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
     );
   }
 
-  void _complete() {
+  void _complete() async {
+    await ref.read(userProvider.notifier).completeRegistration(
+          User(
+            username: username,
+            displayName: displayName,
+          ),
+        );
     Navigator.of(context).pop();
   }
 

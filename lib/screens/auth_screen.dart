@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pinq/models/our_colors.dart';
-import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -33,7 +32,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       idToken: googleAuth?.idToken,
     );
 
-    
     await _firebase.signInWithCredential(credential);
   }
 
@@ -47,11 +45,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     _form.currentState!.save();
     try {
       if (_isLogin) {
-        final userCredentials = await _firebase.signInWithEmailAndPassword(
+        await _firebase.signInWithEmailAndPassword(
             email: _enteredEmail, password: _enteredPassword);
       }
       if (!_isLogin) {
-        final userCredentials = await _firebase.createUserWithEmailAndPassword(
+        await _firebase.createUserWithEmailAndPassword(
           email: _enteredEmail,
           password: _enteredPassword,
         );
