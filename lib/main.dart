@@ -10,6 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pinq/screens/welcome_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 final colorScheme = ColorScheme.fromSeed(
@@ -54,26 +56,66 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
+
+  Future<bool> _isFirstLaunch() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (prefs.getBool('isFirstLaunch') ?? true) {
+      await prefs.setBool('isFirstLaunch', false);
+      return true;
+    }
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'pinq',
       theme: theme,
-      home: StreamBuilder(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      home: FutureBuilder<bool>(
+        future: _isFirstLaunch(),
+        builder: (context, firstLaunchSnapshot) {
+          if (firstLaunchSnapshot.connectionState == ConnectionState.waiting) {
             return const SplashScreen();
           }
 
-          if (snapshot.hasData) {
-            return const StartScreen();
+          if (firstLaunchSnapshot.data == true) {
+            return WelcomeScreen(
+              onFinish: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const AuthOrStartScreen(),
+                  ),
+                );
+              },
+            );
           }
-          return const AuthScreen();
+
+          return const AuthOrStartScreen();
         },
       ),
+    );
+  }
+}
+
+class AuthOrStartScreen extends StatelessWidget {
+  const AuthOrStartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+
+        if (snapshot.hasData) {
+          return const StartScreen();
+        }
+        return const AuthScreen();
+      },
     );
   }
 }
