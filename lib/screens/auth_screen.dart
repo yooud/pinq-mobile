@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pinq/models/our_colors.dart';
-import 'package:pinq/services/api_service.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 

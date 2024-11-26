@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ShinyButton extends StatefulWidget {
-  ShinyButton({
+  const ShinyButton({
     super.key,
     required this.onPressed,
     required this.text,
@@ -11,8 +11,8 @@ class ShinyButton extends StatefulWidget {
 
   final VoidCallback onPressed;
   final String text;
-  ButtonStyle? style;
-  List<Color>? colors;
+  final ButtonStyle? style;
+  final List<Color>? colors;
 
   @override
   State<ShinyButton> createState() => _ShinyButtonState();
