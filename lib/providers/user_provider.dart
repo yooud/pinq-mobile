@@ -5,7 +5,6 @@ import 'package:pinq/models/invalid_exception.dart';
 import 'package:pinq/models/null_exception.dart';
 import 'package:pinq/models/user.dart';
 import 'package:pinq/services/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class UserNotifier extends StateNotifier<User?> {
   final Ref ref;
@@ -17,6 +16,8 @@ class UserNotifier extends StateNotifier<User?> {
 
     try {
       final userData = await apiService.getUserData();
+      userData.pictureUrl ??=
+          'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg';
       state = userData as User?;
     } catch (e) {
       print(e.toString());
@@ -46,6 +47,13 @@ class UserNotifier extends StateNotifier<User?> {
     final apiService = ref.read(apiServiceProvider);
     try {
       await apiService.updateUserProfile(user);
+      String? photoUrl = fire.FirebaseAuth.instance.currentUser!.photoURL;
+      if (photoUrl != null) {
+        String pictureId =
+            await ref.read(apiServiceProvider).uploadProfileImage(photoUrl);
+        user.pictureId = pictureId;
+      }
+      await apiService.updateUserPicture(user);
       state = user;
     } catch (e) {
       print(e.toString());

@@ -88,9 +88,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 GestureDetector(
                   onTap: _openAvatarSelection,
                   child: CircleAvatar(
-                    backgroundImage: ref.read(userProvider)!.logoUrl == null
+                    backgroundImage: ref.read(userProvider)!.pictureUrl == null
                         ? null
-                        : NetworkImage(ref.read(userProvider)!.logoUrl!),
+                        : NetworkImage(ref.read(userProvider)!.pictureUrl!),
                     radius: 50,
                     backgroundColor: ourPinkColor,
                   ),

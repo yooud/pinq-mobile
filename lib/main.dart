@@ -63,7 +63,7 @@ class MyApp extends StatelessWidget {
 
     if (prefs.getBool('isFirstLaunch') ?? true) {
       await prefs.setBool('isFirstLaunch', false);
-      return true;
+      return false;
     }
     return true;
   }

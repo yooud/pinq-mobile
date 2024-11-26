@@ -20,11 +20,6 @@ class StartScreen extends ConsumerStatefulWidget {
 class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Future<bool> _isUserStateComplete() async {
     try {
       if (await ref.read(userProvider.notifier).isRegistraionCompleted()) {

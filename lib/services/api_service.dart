@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fire;
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:pinq/models/invalid_exception.dart';
 import 'package:pinq/models/null_exception.dart';
 import 'package:pinq/models/user.dart';
@@ -90,7 +92,29 @@ class ApiService {
     if (response.statusCode == 200 ||
         response.statusCode == 201 ||
         response.statusCode == 204) {
+      final responseData = jsonDecode(response.body);
+      user.username = responseData['username'];
+      user.displayName = responseData['display_name'];
+      user.pictureUrl = responseData['profile_picture_url'];
+
       print('succesfully upgraded user data');
+    } else {
+      throw Exception("Failed to upgrade user data");
+    }
+  }
+
+    Future<void> updateUserPicture(User user) async {
+    final response = await http.patch(
+      Uri.parse('https://api.pinq.yooud.org/profile'),
+      headers: _headers,
+      body: jsonEncode({'picture_id': user.pictureId}),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      final responseData = jsonDecode(response.body);
+      user.pictureUrl = responseData['profile_picture_url'];
+
     } else {
       throw Exception("Failed to upgrade user data");
     }
@@ -109,6 +133,40 @@ class ApiService {
       return User.fromJson(userJson);
     } else {
       throw Exception("Failed to fetch user data");
+    }
+  }
+
+  Future<String> uploadProfileImage(String imageUrl) async {
+    // Step 1: Download the image
+    final imgResponse = await http.get(Uri.parse(imageUrl));
+    if (imgResponse.statusCode == 200) {
+      // Step 2: Save the image to a temporary file
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/temp_image.jpg');
+      await tempFile.writeAsBytes(imgResponse.bodyBytes);
+
+      // Step 3: Create the multipart request
+      final uri = Uri.parse('https://api.pinq.yooud.org/photo/profile');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({
+          'Authorization': 'Bearer $_firebaseToken',
+          'X-Session-Id': _sessionToken!,
+        })
+        ..files.add(await http.MultipartFile.fromPath('file', tempFile.path));
+
+      // Step 4: Send the request and get the response
+      final response = await http.Response.fromStream(await request.send());
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
+        final responseData = jsonDecode(response.body);
+        return responseData['id'];
+      } else {
+        throw Exception("Failed to upload profile image");
+      }
+    } else {
+      throw Exception("Failed to download image");
     }
   }
 }
