@@ -6,10 +6,10 @@ import 'package:pinq/models/null_exception.dart';
 import 'package:pinq/models/user.dart';
 import 'package:pinq/services/api_service.dart';
 
-class UserNotifier extends StateNotifier<User?> {
+class UserNotifier extends StateNotifier<User> {
   final Ref ref;
 
-  UserNotifier(this.ref) : super(null);
+  UserNotifier(this.ref) : super(User());
 
   Future<void> initializeUser() async {
     final apiService = ref.read(apiServiceProvider);
@@ -18,7 +18,7 @@ class UserNotifier extends StateNotifier<User?> {
       final userData = await apiService.getUserData();
       userData.pictureUrl ??=
           'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg';
-      state = userData as User?;
+      state = userData;
     } catch (e) {
       print(e.toString());
     }
@@ -61,6 +61,6 @@ class UserNotifier extends StateNotifier<User?> {
   }
 }
 
-final userProvider = StateNotifierProvider<UserNotifier, User?>(
+final userProvider = StateNotifierProvider<UserNotifier, User>(
   (ref) => UserNotifier(ref),
 );

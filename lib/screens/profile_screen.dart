@@ -63,12 +63,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ref.read(userProvider)!.displayName ?? 'displayName',
+                      ref.read(userProvider).displayName ?? 'displayName',
                       style: const TextStyle(fontSize: 30),
                     ),
                     ShinyButton(
                       onPressed: () {},
-                      text: ref.read(userProvider)!.username ?? 'username',
+                      text: ref.read(userProvider).username ?? 'username',
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ourPinkColor,
                         shape: RoundedRectangleBorder(
@@ -88,9 +88,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 GestureDetector(
                   onTap: _openAvatarSelection,
                   child: CircleAvatar(
-                    backgroundImage: ref.read(userProvider)!.pictureUrl == null
+                    backgroundImage: ref.read(userProvider).pictureUrl == null
                         ? null
-                        : NetworkImage(ref.read(userProvider)!.pictureUrl!),
+                        : NetworkImage(ref.read(userProvider).pictureUrl!),
                     radius: 50,
                     backgroundColor: ourPinkColor,
                   ),

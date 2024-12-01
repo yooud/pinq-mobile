@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -7,6 +9,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/profile_screen.dart';
 import 'package:pinq/screens/settings_screen.dart';
+import 'package:pinq/services/api_service.dart';
 import 'package:pinq/widgets/finish_auth.dart';
 
 class StartScreen extends ConsumerStatefulWidget {
@@ -62,17 +65,20 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       return;
     }
 
-    Uint8List imageData =
-        await loadImageAsUint8List('assets/google_icon.png', 150, 150);
+    Uint8List imageData = await ref
+        .read(apiServiceProvider)
+        .downloadPicture(ref.read(userProvider).pictureUrl!);
+    Uint8List circleAvatar = await _getCircleAvatar(imageData);
 
     mapboxMap.location.updateSettings(
       map.LocationComponentSettings(
         enabled: true,
         locationPuck: map.LocationPuck(
           locationPuck2D: map.LocationPuck2D(
-            topImage: imageData,
+            topImage: circleAvatar,
           ),
         ),
+        puckBearingEnabled: false,
       ),
     );
 
@@ -90,6 +96,38 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           pitch: 15),
       map.MapAnimationOptions(duration: 1000, startDelay: 0),
     );
+  }
+
+  Future<Uint8List> _getCircleAvatar(Uint8List imageData) async {
+    final codec = await instantiateImageCodec(imageData);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+
+    final pictureRecorder = PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint();
+    final size = Size(image.width.toDouble(), image.height.toDouble());
+
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      size.width / 2,
+      paint,
+    );
+
+    paint.isAntiAlias = true;
+    paint.shader = ImageShader(
+        image, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage);
+
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height / 2),
+      size.width / 2,
+      paint,
+    );
+
+    final picture = pictureRecorder.endRecording();
+    final img = await picture.toImage(image.width, image.height);
+    final byteData = await img.toByteData(format: ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 
   Future<geo.Position> _determinePosition() async {
@@ -121,20 +159,20 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     return await geo.Geolocator.getCurrentPosition();
   }
 
-  Future<Uint8List> loadImageAsUint8List(
-      String assetPath, int width, int height) async {
-    ByteData data = await rootBundle.load(assetPath);
-    Uint8List list = data.buffer.asUint8List();
+  // Future<Uint8List> loadImageAsUint8List(
+  //     String assetPath, int width, int height) async {
+  //   ByteData data = await rootBundle.load(assetPath);
+  //   Uint8List list = data.buffer.asUint8List();
 
-    Uint8List resizedImage = await FlutterImageCompress.compressWithList(
-      list,
-      minWidth: width,
-      minHeight: height,
-      format: CompressFormat.png,
-    );
+  //   Uint8List resizedImage = await FlutterImageCompress.compressWithList(
+  //     list,
+  //     minWidth: width,
+  //     minHeight: height,
+  //     format: CompressFormat.png,
+  //   );
 
-    return resizedImage;
-  }
+  //   return resizedImage;
+  // }
 
   void _openProfileOverlay() {
     showModalBottomSheet(
