@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fire;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:pinq/models/invalid_exception.dart';
@@ -104,7 +105,7 @@ class ApiService {
     }
   }
 
-    Future<void> updateUserPicture(User user) async {
+  Future<void> updateUserPicture(User user) async {
     final response = await http.patch(
       Uri.parse('https://api.pinq.yooud.org/profile'),
       headers: _headers,
@@ -115,7 +116,6 @@ class ApiService {
         response.statusCode == 204) {
       final responseData = jsonDecode(response.body);
       user.pictureUrl = responseData['profile_picture_url'];
-
     } else {
       throw Exception("Failed to upgrade user data");
     }
@@ -154,7 +154,7 @@ class ApiService {
         ..files.add(await http.MultipartFile.fromPath('file', tempFile.path));
 
       final response = await http.Response.fromStream(await request.send());
-      
+
       if (response.statusCode == 200 ||
           response.statusCode == 201 ||
           response.statusCode == 204) {
@@ -168,13 +168,23 @@ class ApiService {
     }
   }
 
-  Future<Uint8List> downloadPicture (String pictureUrl) async{
+  Future<Uint8List> downloadPicture(String pictureUrl) async {
     final response = await http.get(Uri.parse(pictureUrl));
     if (response.statusCode == 200) {
       return response.bodyBytes;
     } else {
       throw Exception("Failed to download image");
     }
+  }
+
+  Future<void> logOut() async {
+    http.delete(
+      Uri.parse('https://api.pinq.yooud.org/auth'),
+      headers: _headers,
+    );
+    await fire.FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
+    await _clearSessionToken();
   }
 }
 
