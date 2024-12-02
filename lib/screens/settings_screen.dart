@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pinq/models/our_colors.dart';
+import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,7 +28,9 @@ class _ProfileScreenState extends ConsumerState<SettingsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
+                      Navigator.of(context).pop();
                       await ref.read(apiServiceProvider).logOut();
+                      ref.read(userProvider.notifier).clearUser();
                     },
                     style: ElevatedButton.styleFrom(
                       alignment: Alignment.centerLeft,

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pinq/models/invalid_exception.dart';
 import 'package:pinq/models/null_exception.dart';
 import 'package:pinq/models/user.dart';
+import 'package:pinq/models/validation_exception.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -100,8 +101,10 @@ class ApiService {
       user.pictureUrl = responseData['profile_picture_url'];
 
       print('Succesfully upgraded user data');
-    } else {
-      throw Exception("Failed to upgrade user data");
+    } 
+    if(response.statusCode == 400){
+      final responseData = jsonDecode(response.body);
+      throw ValidationException(responseData['errors']);
     }
   }
 
@@ -182,9 +185,9 @@ class ApiService {
       Uri.parse('https://api.pinq.yooud.org/auth'),
       headers: _headers,
     );
+    _clearSessionToken();
+    GoogleSignIn().signOut();
     await fire.FirebaseAuth.instance.signOut();
-    await GoogleSignIn().signOut();
-    await _clearSessionToken();
   }
 }
 

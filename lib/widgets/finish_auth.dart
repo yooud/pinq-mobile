@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/models/user.dart';
+import 'package:pinq/models/validation_exception.dart';
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/shiny_button.dart';
 
@@ -16,22 +17,56 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
   final PageController _pageController = PageController();
   String displayName = '';
   String username = '';
+  String? displayNameError;
+  String? usernameError;
 
   void _nextPage() {
-    _pageController.nextPage(
-      duration: Duration(milliseconds: 300),
-      curve: Curves.ease,
-    );
+    if (displayNameError == null && usernameError == null) {
+      _pageController.nextPage(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.ease,
+      );
+    }
   }
 
   void _complete() async {
-    await ref.read(userProvider.notifier).completeRegistration(
-          User(
-            username: username,
-            displayName: displayName,
-          ),
-        );
+    try {
+      await ref.read(userProvider.notifier).completeRegistration(
+            User(
+              username: username,
+              displayName: displayName,
+            ),
+          );
+    } on ValidationException catch (e) {
+      print(e.errors['Username']);
+      print(e.errors['DisplayName']);
+    } catch (e) {
+      print('Error: $e');
+    }
+
     Navigator.of(context).pop();
+  }
+
+  void _validateDisplayName(String value) {
+    setState(() {
+      displayName = value;
+      if (value.length < 5 || value.length > 20) {
+        displayNameError = 'Name must be between 5 and 20 characters';
+      } else {
+        displayNameError = null;
+      }
+    });
+  }
+
+  void _validateUsername(String value) {
+    setState(() {
+      username = value;
+      if (value.length < 5 || value.length > 20) {
+        usernameError = 'Username must be between 5 and 20 characters';
+      } else {
+        usernameError = null;
+      }
+    });
   }
 
   @override
@@ -76,7 +111,7 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
-                  onChanged: (value) => displayName = value,
+                  onChanged: _validateDisplayName,
                   decoration: InputDecoration(
                     hintText: 'Name',
                     hintStyle: Theme.of(context)
@@ -87,6 +122,7 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: ourPinkColor),
                     ),
+                    errorText: displayNameError,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -107,7 +143,7 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
-                  onChanged: (value) => username = value,
+                  onChanged: _validateUsername,
                   decoration: InputDecoration(
                     hintText: 'Username',
                     hintStyle: Theme.of(context)
@@ -118,6 +154,7 @@ class _FinishAuthState extends ConsumerState<FinishAuth> {
                     focusedBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: ourPinkColor),
                     ),
+                    errorText: usernameError,
                   ),
                 ),
                 const SizedBox(height: 20),

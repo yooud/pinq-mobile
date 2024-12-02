@@ -65,9 +65,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       return;
     }
 
-    Uint8List imageData = await ref
-        .read(apiServiceProvider)
-        .downloadPicture(ref.read(userProvider).pictureUrl!);
+    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(ref
+            .read(userProvider)
+            .pictureUrl ??
+        'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
     Uint8List circleAvatar = await _getCircleAvatar(imageData);
 
     mapboxMap.location.updateSettings(
@@ -158,21 +159,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
 
     return await geo.Geolocator.getCurrentPosition();
   }
-
-  // Future<Uint8List> loadImageAsUint8List(
-  //     String assetPath, int width, int height) async {
-  //   ByteData data = await rootBundle.load(assetPath);
-  //   Uint8List list = data.buffer.asUint8List();
-
-  //   Uint8List resizedImage = await FlutterImageCompress.compressWithList(
-  //     list,
-  //     minWidth: width,
-  //     minHeight: height,
-  //     format: CompressFormat.png,
-  //   );
-
-  //   return resizedImage;
-  // }
 
   void _openProfileOverlay() {
     showModalBottomSheet(
