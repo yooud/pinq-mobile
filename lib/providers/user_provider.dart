@@ -1,3 +1,4 @@
+
 import 'package:firebase_auth/firebase_auth.dart' as fire;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -49,43 +50,52 @@ class UserNotifier extends StateNotifier<User> {
       await apiService.updateUserProfile(user);
       String? photoUrl = fire.FirebaseAuth.instance.currentUser!.photoURL;
       if (photoUrl != null) {
-        String pictureId =
-            await ref.read(apiServiceProvider).uploadProfileImage(photoUrl);
+        String pictureId = await ref
+            .read(apiServiceProvider)
+            .uploadProfilePictureByUrl(photoUrl);
         user.pictureId = pictureId;
-        await apiService.updateUserPicture(user);
+        user.pictureUrl = await apiService.updateUserPicture(user.pictureId!);
       }
-
       await initializeUser();
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<void> updateDisplayName(String displayName) async {
+  Future<void> updateUserDisplayName(String displayName) async {
     final apiService = ref.read(apiServiceProvider);
     try {
       await apiService.updateUserDisplayName(displayName);
-      state.displayName = displayName;
+      state = state.copyWith(displayName: displayName);
     } catch (e) {
       rethrow;
     }
   }
 
-  Future<void> updateUsername(String username) async {
+  Future<void> updateUserUsername(String username) async {
     final apiService = ref.read(apiServiceProvider);
     try {
       await apiService.updateUserUsername(username);
-      state.username = username;
+      state = state.copyWith(username: username);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserPicture(String picturePath) async {
+    final apiService = ref.read(apiServiceProvider);
+    try {
+      String pictureId =
+          await apiService.uploadProfilePictureByFilePath(picturePath);
+      String pictureUrl = await apiService.updateUserPicture(pictureId);
+      state = state.copyWith(pictureId: pictureId, pictureUrl: pictureUrl);
     } catch (e) {
       rethrow;
     }
   }
 
   void clearUser() {
-    state.displayName = null;
-    state.username = null;
-    state.pictureUrl = null;
-    state.pictureId = null;
+    state = User();
   }
 }
 

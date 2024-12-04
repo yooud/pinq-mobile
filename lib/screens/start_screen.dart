@@ -44,7 +44,10 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           child: FinishAuth(),
         );
       },
-    );
+    ).then((_) {
+      _setPuck();
+      _setCameraPosition();
+    });
   }
 
   _onMapCreated(map.MapboxMap mapboxMap) async {
@@ -60,18 +63,23 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     try {
       if (!(await _isUserStateComplete())) {
         _showOnboardingDialog();
+      } else {
+        _setPuck();
+        _setCameraPosition();
       }
     } catch (e) {
       return;
     }
+  }
 
+  void _setPuck() async {
     Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(ref
-            .read(userProvider)
+            .watch(userProvider)
             .pictureUrl ??
         'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
     Uint8List circleAvatar = await _getCircleAvatar(imageData);
 
-    mapboxMap.location.updateSettings(
+    mapboxMap!.location.updateSettings(
       map.LocationComponentSettings(
         enabled: true,
         locationPuck: map.LocationPuck(
@@ -82,10 +90,12 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         puckBearingEnabled: false,
       ),
     );
+  }
 
+  void _setCameraPosition() async {
     geo.Position position = await _determinePosition();
 
-    mapboxMap.easeTo(
+    mapboxMap!.easeTo(
       map.CameraOptions(
           center: map.Point(
               coordinates: map.Position(
@@ -172,9 +182,11 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
-      backgroundColor: Color.fromARGB(255, 30, 30, 30),
+      backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => const ProfileScreen(),
-    );
+    ).then((_) {
+      _setPuck();
+    });
   }
 
   void _openSettingseOverlay() {
@@ -182,7 +194,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
-      backgroundColor: Color.fromARGB(255, 30, 30, 30),
+      backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => const SettingsScreen(),
     );
   }

@@ -70,7 +70,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String newDisplayName = await _showChangeDisplayNameDialog();
     if (newDisplayName.isNotEmpty) {
       try {
-        await ref.read(userProvider.notifier).updateDisplayName(newDisplayName);
+        await ref
+            .read(userProvider.notifier)
+            .updateUserDisplayName(newDisplayName);
 
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -91,7 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String newUsername = await _showChangeUsernameDialog();
     if (newUsername.isNotEmpty) {
       try {
-        await ref.read(userProvider.notifier).updateUsername(newUsername);
+        await ref.read(userProvider.notifier).updateUserUsername(newUsername);
 
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).clearSnackBars();

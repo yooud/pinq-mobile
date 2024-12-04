@@ -119,7 +119,7 @@ class ApiService {
     }
   }
 
-      Future<void> updateUserUsername(String username) async {
+  Future<void> updateUserUsername(String username) async {
     final response = await http.patch(
       Uri.parse('https://api.pinq.yooud.org/profile'),
       headers: _headers,
@@ -130,17 +130,17 @@ class ApiService {
     }
   }
 
-  Future<void> updateUserPicture(User user) async {
+  Future<String> updateUserPicture(String pictureId) async {
     final response = await http.patch(
       Uri.parse('https://api.pinq.yooud.org/profile'),
       headers: _headers,
-      body: jsonEncode({'picture_id': user.pictureId}),
+      body: jsonEncode({'picture_id': pictureId}),
     );
     if (response.statusCode == 200 ||
         response.statusCode == 201 ||
         response.statusCode == 204) {
       final responseData = jsonDecode(response.body);
-      user.pictureUrl = responseData['profile_picture_url'];
+      return responseData['profile_picture_url'];
     } else {
       throw Exception("Failed to upgrade user data");
     }
@@ -162,7 +162,7 @@ class ApiService {
     }
   }
 
-  Future<String> uploadProfileImage(String imageUrl) async {
+  Future<String> uploadProfilePictureByUrl(String imageUrl) async {
     final imgResponse = await http.get(Uri.parse(imageUrl));
 
     if (imgResponse.statusCode == 200) {
@@ -190,6 +190,27 @@ class ApiService {
       }
     } else {
       throw Exception("Failed to download image");
+    }
+  }
+
+  Future<String> uploadProfilePictureByFilePath(String picturePath) async {
+    final uri = Uri.parse('https://api.pinq.yooud.org/photo/profile');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Authorization': 'Bearer $_firebaseToken',
+        'X-Session-Id': _sessionToken!,
+      })
+      ..files.add(await http.MultipartFile.fromPath('file', picturePath));
+
+    final response = await http.Response.fromStream(await request.send());
+
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      final responseData = jsonDecode(response.body);
+      return responseData['id'];
+    } else {
+      throw Exception("Failed to upload profile image");
     }
   }
 

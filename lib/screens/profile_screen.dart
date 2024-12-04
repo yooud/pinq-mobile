@@ -42,11 +42,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
 
-    // if (pickedFile != null) {
-    //   setState(() {
-    //     _image = File(pickedFile.path);
-    //   });
-    // }
+    if (pickedFile != null) {
+      await ref.read(userProvider.notifier).updateUserPicture(pickedFile.path);
+    }
   }
 
   @override
@@ -88,9 +86,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 GestureDetector(
                   onTap: _openAvatarSelection,
                   child: CircleAvatar(
-                    backgroundImage: ref.read(userProvider).pictureUrl == null
-                        ? null
-                        : NetworkImage(ref.read(userProvider).pictureUrl!),
+                    backgroundImage: NetworkImage(ref.watch(userProvider).pictureUrl!),
                     radius: 50,
                     backgroundColor: ourPinkColor,
                   ),

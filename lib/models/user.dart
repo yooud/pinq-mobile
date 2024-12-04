@@ -26,4 +26,18 @@ class User {
       'picture_id': pictureId,
     };
   }
+
+    User copyWith({
+    String? username,
+    String? displayName,
+    String? pictureId,
+    String? pictureUrl,
+  }) {
+    return User(
+      username: username ?? this.username,
+      displayName: displayName ?? this.displayName,
+      pictureId: pictureId ?? this.pictureId,
+      pictureUrl: pictureUrl ?? this.pictureUrl,
+    );
+  }
 }
