@@ -100,7 +100,14 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   }
 
   Future<Uint8List> _getCircleAvatar(Uint8List imageData) async {
-    final codec = await instantiateImageCodec(imageData);
+    final resizedImageData = await FlutterImageCompress.compressWithList(
+      imageData,
+      minWidth: 150,
+      minHeight: 150,
+      quality: 100,
+    );
+
+    final codec = await instantiateImageCodec(resizedImageData);
     final frame = await codec.getNextFrame();
     final image = frame.image;
 
