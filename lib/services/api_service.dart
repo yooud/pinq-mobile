@@ -101,18 +101,29 @@ class ApiService {
       user.pictureUrl = responseData['profile_picture_url'];
 
       print('Succesfully upgraded user data');
-    } 
-    if(response.statusCode == 400){
+    }
+    if (response.statusCode == 400) {
       final responseData = jsonDecode(response.body);
       throw ValidationException(responseData['errors']);
     }
   }
 
-    Future<void> updateUserDisplayName(String displayName) async {
+  Future<void> updateUserDisplayName(String displayName) async {
     final response = await http.patch(
       Uri.parse('https://api.pinq.yooud.org/profile'),
       headers: _headers,
       body: jsonEncode({'display_name': displayName}),
+    );
+    if (response.statusCode == 400) {
+      throw Exception("Failed to upgrade user data");
+    }
+  }
+
+      Future<void> updateUserUsername(String username) async {
+    final response = await http.patch(
+      Uri.parse('https://api.pinq.yooud.org/profile'),
+      headers: _headers,
+      body: jsonEncode({'username': username}),
     );
     if (response.statusCode == 400) {
       throw Exception("Failed to upgrade user data");

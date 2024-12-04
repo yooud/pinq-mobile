@@ -61,11 +61,21 @@ class UserNotifier extends StateNotifier<User> {
     }
   }
 
-  Future<void> updateUserDisplayName(String displayName) async {
+  Future<void> updateDisplayName(String displayName) async {
     final apiService = ref.read(apiServiceProvider);
     try {
       await apiService.updateUserDisplayName(displayName);
       state.displayName = displayName;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUsername(String username) async {
+    final apiService = ref.read(apiServiceProvider);
+    try {
+      await apiService.updateUserUsername(username);
+      state.username = username;
     } catch (e) {
       rethrow;
     }

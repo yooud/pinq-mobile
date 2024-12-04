@@ -70,14 +70,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String newDisplayName = await _showChangeDisplayNameDialog();
     if (newDisplayName.isNotEmpty) {
       try {
-        await ref
-            .read(userProvider.notifier)
-            .updateUserDisplayName(newDisplayName);
+        await ref.read(userProvider.notifier).updateDisplayName(newDisplayName);
 
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Display name changed successfully')),
+        );
+      } catch (e) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _changeUsername() async {
+    String newUsername = await _showChangeUsernameDialog();
+    if (newUsername.isNotEmpty) {
+      try {
+        await ref.read(userProvider.notifier).updateUsername(newUsername);
+
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username changed successfully')),
         );
       } catch (e) {
         Navigator.of(context).pop();
@@ -176,6 +195,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return newDisplayName.trim();
   }
 
+  Future<String> _showChangeUsernameDialog() async {
+    String newUsername = '';
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change username'),
+          content: TextField(
+            onChanged: (value) {
+              newUsername = value;
+            },
+            decoration: InputDecoration(
+              hintText: 'Enter new username',
+              hintStyle: Theme.of(context)
+                  .textTheme
+                  .labelMedium!
+                  .copyWith(fontSize: 20),
+              border: const OutlineInputBorder(),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: ourPinkColor),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        );
+      },
+    );
+    return newUsername.trim();
+  }
+
   Future<String> _showReauthenticateDialog() async {
     String password = '';
     await showDialog(
@@ -247,26 +309,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 )
               ],
             ),
-            //             Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //   children: [
-            //     Expanded(
-            //       child: ElevatedButton(
-            //         onPressed: () async {
-            //           await _changeUsername();
-            //         },
-            //         style: ElevatedButton.styleFrom(
-            //           alignment: Alignment.centerLeft,
-            //           backgroundColor: ourDarkColor,
-            //         ),
-            //         child: Text(
-            //           'Change Username',
-            //           style: Theme.of(context).textTheme.bodyLarge,
-            //         ),
-            //       ),
-            //     )
-            //   ],
-            // ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _changeUsername();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                      backgroundColor: ourDarkColor,
+                    ),
+                    child: Text(
+                      'Change Username',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                )
+              ],
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
