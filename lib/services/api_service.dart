@@ -108,6 +108,17 @@ class ApiService {
     }
   }
 
+    Future<void> updateUserDisplayName(String displayName) async {
+    final response = await http.patch(
+      Uri.parse('https://api.pinq.yooud.org/profile'),
+      headers: _headers,
+      body: jsonEncode({'display_name': displayName}),
+    );
+    if (response.statusCode == 400) {
+      throw Exception("Failed to upgrade user data");
+    }
+  }
+
   Future<void> updateUserPicture(User user) async {
     final response = await http.patch(
       Uri.parse('https://api.pinq.yooud.org/profile'),

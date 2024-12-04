@@ -52,10 +52,20 @@ class UserNotifier extends StateNotifier<User> {
         String pictureId =
             await ref.read(apiServiceProvider).uploadProfileImage(photoUrl);
         user.pictureId = pictureId;
-      await apiService.updateUserPicture(user);
+        await apiService.updateUserPicture(user);
       }
 
       await initializeUser();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserDisplayName(String displayName) async {
+    final apiService = ref.read(apiServiceProvider);
+    try {
+      await apiService.updateUserDisplayName(displayName);
+      state.displayName = displayName;
     } catch (e) {
       rethrow;
     }

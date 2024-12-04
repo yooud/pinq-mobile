@@ -1,11 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/services/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -15,7 +13,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-
   Future<void> _reauthenticateUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -48,7 +45,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ScaffoldMessenger.of(context).clearSnackBars();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Password must be at least 8 characters long')),
+                  content: Text('Password must be at least 8 characters long')),
             );
           }
         }
@@ -66,6 +63,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(
             content: Text('Cannot change password for Google account')),
       );
+    }
+  }
+
+  Future<void> _changeDisplayName() async {
+    String newDisplayName = await _showChangeDisplayNameDialog();
+    if (newDisplayName.isNotEmpty) {
+      try {
+        await ref
+            .read(userProvider.notifier)
+            .updateUserDisplayName(newDisplayName);
+
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Display name changed successfully')),
+        );
+      } catch (e) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
@@ -111,6 +131,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       },
     );
     return newPassword.trim();
+  }
+
+  Future<String> _showChangeDisplayNameDialog() async {
+    String newDisplayName = '';
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Change name'),
+          content: TextField(
+            onChanged: (value) {
+              newDisplayName = value;
+            },
+            decoration: InputDecoration(
+              hintText: 'Enter new name',
+              hintStyle: Theme.of(context)
+                  .textTheme
+                  .labelMedium!
+                  .copyWith(fontSize: 20),
+              border: const OutlineInputBorder(),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: ourPinkColor),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        );
+      },
+    );
+    return newDisplayName.trim();
   }
 
   Future<String> _showReauthenticateDialog() async {
@@ -164,6 +227,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _changeDisplayName();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                      backgroundColor: ourDarkColor,
+                    ),
+                    child: Text(
+                      'Change Name',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                )
+              ],
+            ),
+            //             Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //   children: [
+            //     Expanded(
+            //       child: ElevatedButton(
+            //         onPressed: () async {
+            //           await _changeUsername();
+            //         },
+            //         style: ElevatedButton.styleFrom(
+            //           alignment: Alignment.centerLeft,
+            //           backgroundColor: ourDarkColor,
+            //         ),
+            //         child: Text(
+            //           'Change Username',
+            //           style: Theme.of(context).textTheme.bodyLarge,
+            //         ),
+            //       ),
+            //     )
+            //   ],
+            // ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
