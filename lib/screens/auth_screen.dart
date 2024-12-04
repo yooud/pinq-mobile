@@ -35,6 +35,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     await _firebase.signInWithCredential(credential);
   }
 
+  Future<void> _resetPassword() async {
+    _form.currentState!.save();
+    try {
+      await _firebase.sendPasswordResetEmail(email: _enteredEmail);
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset email sent')),
+      );
+    } on FirebaseAuthException catch (error) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message ?? 'Failed to send reset email')),
+      );
+    }
+  }
+
   void _submit() async {
     final isValid = _form.currentState!.validate();
 
@@ -206,6 +222,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ? 'Create an account'
                               : 'I already have an account.'),
                         ),
+                        if (_isLogin)
+                          TextButton(
+                            onPressed: _resetPassword,
+                            child: const Text('Forgot Password?'),
+                          ),
                         TextButton.icon(
                           onPressed: () {
                             _signInWithGoogle();
