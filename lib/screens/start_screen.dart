@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:pinq/providers/friends_provider.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
@@ -67,6 +68,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       } else {
         _setPuck();
         _setCameraPosition();
+        ref.read(friendsProvider.notifier).fetchFriends();
       }
     } catch (e) {
       return;

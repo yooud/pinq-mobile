@@ -232,6 +232,34 @@ class ApiService {
     GoogleSignIn().signOut();
     await fire.FirebaseAuth.instance.signOut();
   }
+
+  Future<List<User>> getFriends() async {
+    final response = await http.get(
+      Uri.parse('https://api.pinq.yooud.org/profile/me/friends'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> friendsJson = jsonDecode(response.body)['data'];
+      return friendsJson.map((e) => User.friendFromJson(e)).toList();
+    } else {
+      throw Exception("Failed to fetch friends");
+    }
+  }
+
+  Future<User> getUserByUsername(String username) async {
+    final response = await http.get(
+      Uri.parse('https://api.pinq.yooud.org/profile/$username'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> userJson = jsonDecode(response.body);
+      return User.friendFromJson(userJson);
+    } else {
+      throw Exception("Failed to fetch user data");
+    }
+  }
 }
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());

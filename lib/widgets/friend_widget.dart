@@ -49,7 +49,9 @@ class FriendWidget extends StatelessWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: isFriend ? Icon(Icons.chat_bubble) : Icon(Icons.person_add),
+            icon: isFriend
+                ? const Icon(Icons.chat_bubble)
+                : const Icon(Icons.person_add),
             color: Colors.amber,
             iconSize: 50,
           ),
