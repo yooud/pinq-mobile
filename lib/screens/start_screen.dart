@@ -1,16 +1,18 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/profile_screen.dart';
 import 'package:pinq/screens/settings_screen.dart';
 import 'package:pinq/services/api_service.dart';
 import 'package:pinq/widgets/finish_auth.dart';
+
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -77,7 +79,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             .watch(userProvider)
             .pictureUrl ??
         'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
-    Uint8List circleAvatar = await _getCircleAvatar(imageData);
+    Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
 
     mapboxMap!.location.updateSettings(
       map.LocationComponentSettings(
@@ -109,44 +111,54 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
   }
 
-  Future<Uint8List> _getCircleAvatar(Uint8List imageData) async {
-    final resizedImageData = await FlutterImageCompress.compressWithList(
-      imageData,
-      minWidth: 150,
-      minHeight: 150,
-      quality: 100,
-    );
+Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
+  final ui.Codec codec = await ui.instantiateImageCodec(imageData);
+  final ui.FrameInfo frameInfo = await codec.getNextFrame();
+  final ui.Image image = frameInfo.image;
 
-    final codec = await instantiateImageCodec(resizedImageData);
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
+  final int imgWidth = image.width;
+  final int imgHeight = image.height;
 
-    final pictureRecorder = PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final paint = Paint();
-    final size = Size(image.width.toDouble(), image.height.toDouble());
-
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.width / 2,
-      paint,
-    );
-
-    paint.isAntiAlias = true;
-    paint.shader = ImageShader(
-        image, TileMode.clamp, TileMode.clamp, Matrix4.identity().storage);
-
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.width / 2,
-      paint,
-    );
-
-    final picture = pictureRecorder.endRecording();
-    final img = await picture.toImage(image.width, image.height);
-    final byteData = await img.toByteData(format: ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+  int diameter;
+  Offset offset;
+  if (imgWidth == imgHeight) {
+    diameter = imgWidth;
+    offset = Offset.zero;
+  } else if (imgWidth < imgHeight) {
+    diameter = imgWidth;
+    offset = Offset(0, (imgHeight - imgWidth) / 2);
+  } else {
+    diameter = imgHeight;
+    offset = Offset((imgWidth - imgHeight) / 2, 0);
   }
+
+  const int targetSize = 150;
+
+  final ui.PictureRecorder recorder = ui.PictureRecorder();
+  final Canvas canvas = Canvas(recorder);
+  final Paint paint = Paint();
+
+  final Path path = Path()
+    ..addOval(Rect.fromLTWH(0, 0, targetSize.toDouble(), targetSize.toDouble()));
+
+  final double scale = targetSize / diameter;
+
+  canvas.clipPath(path);
+  canvas.scale(scale);
+  canvas.drawImageRect(
+    image,
+    Rect.fromLTWH(offset.dx, offset.dy, diameter.toDouble(), diameter.toDouble()),
+    Rect.fromLTWH(0, 0, diameter.toDouble(), diameter.toDouble()),
+    paint,
+  );
+
+  final ui.Picture picture = recorder.endRecording();
+  final ui.Image circledImage = await picture.toImage(targetSize, targetSize);
+
+  final ByteData? byteData =
+      await circledImage.toByteData(format: ui.ImageByteFormat.png);
+  return byteData!.buffer.asUint8List();
+}
 
   Future<geo.Position> _determinePosition() async {
     bool serviceEnabled;
