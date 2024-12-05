@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:pinq/providers/user_provider.dart';
+import 'package:pinq/screens/friends_screen.dart';
 import 'package:pinq/screens/profile_screen.dart';
 import 'package:pinq/screens/settings_screen.dart';
 import 'package:pinq/services/api_service.dart';
 import 'package:pinq/widgets/finish_auth.dart';
-
 
 class StartScreen extends ConsumerStatefulWidget {
   const StartScreen({super.key});
@@ -111,54 +110,56 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
   }
 
-Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
-  final ui.Codec codec = await ui.instantiateImageCodec(imageData);
-  final ui.FrameInfo frameInfo = await codec.getNextFrame();
-  final ui.Image image = frameInfo.image;
+  Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
+    final ui.Codec codec = await ui.instantiateImageCodec(imageData);
+    final ui.FrameInfo frameInfo = await codec.getNextFrame();
+    final ui.Image image = frameInfo.image;
 
-  final int imgWidth = image.width;
-  final int imgHeight = image.height;
+    final int imgWidth = image.width;
+    final int imgHeight = image.height;
 
-  int diameter;
-  Offset offset;
-  if (imgWidth == imgHeight) {
-    diameter = imgWidth;
-    offset = Offset.zero;
-  } else if (imgWidth < imgHeight) {
-    diameter = imgWidth;
-    offset = Offset(0, (imgHeight - imgWidth) / 2);
-  } else {
-    diameter = imgHeight;
-    offset = Offset((imgWidth - imgHeight) / 2, 0);
+    int diameter;
+    Offset offset;
+    if (imgWidth == imgHeight) {
+      diameter = imgWidth;
+      offset = Offset.zero;
+    } else if (imgWidth < imgHeight) {
+      diameter = imgWidth;
+      offset = Offset(0, (imgHeight - imgWidth) / 2);
+    } else {
+      diameter = imgHeight;
+      offset = Offset((imgWidth - imgHeight) / 2, 0);
+    }
+
+    const int targetSize = 150;
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final Paint paint = Paint();
+
+    final Path path = Path()
+      ..addOval(
+          Rect.fromLTWH(0, 0, targetSize.toDouble(), targetSize.toDouble()));
+
+    final double scale = targetSize / diameter;
+
+    canvas.clipPath(path);
+    canvas.scale(scale);
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(
+          offset.dx, offset.dy, diameter.toDouble(), diameter.toDouble()),
+      Rect.fromLTWH(0, 0, diameter.toDouble(), diameter.toDouble()),
+      paint,
+    );
+
+    final ui.Picture picture = recorder.endRecording();
+    final ui.Image circledImage = await picture.toImage(targetSize, targetSize);
+
+    final ByteData? byteData =
+        await circledImage.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
-
-  const int targetSize = 150;
-
-  final ui.PictureRecorder recorder = ui.PictureRecorder();
-  final Canvas canvas = Canvas(recorder);
-  final Paint paint = Paint();
-
-  final Path path = Path()
-    ..addOval(Rect.fromLTWH(0, 0, targetSize.toDouble(), targetSize.toDouble()));
-
-  final double scale = targetSize / diameter;
-
-  canvas.clipPath(path);
-  canvas.scale(scale);
-  canvas.drawImageRect(
-    image,
-    Rect.fromLTWH(offset.dx, offset.dy, diameter.toDouble(), diameter.toDouble()),
-    Rect.fromLTWH(0, 0, diameter.toDouble(), diameter.toDouble()),
-    paint,
-  );
-
-  final ui.Picture picture = recorder.endRecording();
-  final ui.Image circledImage = await picture.toImage(targetSize, targetSize);
-
-  final ByteData? byteData =
-      await circledImage.toByteData(format: ui.ImageByteFormat.png);
-  return byteData!.buffer.asUint8List();
-}
 
   Future<geo.Position> _determinePosition() async {
     bool serviceEnabled;
@@ -211,6 +212,26 @@ Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
     );
   }
 
+  void _openFriendsOverlay() {
+    showModalBottomSheet(
+      useSafeArea: true,
+      isScrollControlled: true,
+      context: context,
+      backgroundColor: const Color.fromARGB(255, 30, 30, 30),
+      builder: (ctx) => const FriendsScreen(),
+    );
+  }
+
+  Future<void> _openFAQ() async {
+    const url = 'https://pinq.yooud.org';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri,mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -252,6 +273,44 @@ Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
                     padding: EdgeInsets.all(8.0),
                     child: Icon(
                       Icons.settings_sharp,
+                      size: 32,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 144,
+              right: 16,
+              child: Material(
+                color: const Color.fromARGB(155, 255, 170, 198),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: _openFriendsOverlay,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.person_pin,
+                      size: 32,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 210,
+              right: 16,
+              child: Material(
+                color: const Color.fromARGB(155, 255, 170, 198),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: _openFAQ,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.question_mark_rounded,
                       size: 32,
                       color: Color.fromARGB(255, 0, 0, 0),
                     ),
