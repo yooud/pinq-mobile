@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/models/user.dart';
 import 'package:pinq/providers/friends_provider.dart';
-import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/widgets/friend_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -26,26 +25,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     super.initState();
 
     friends = ref.read(friendsProvider);
-    // ? ListView.builder(
-    //     shrinkWrap: true,
-    //     physics: const NeverScrollableScrollPhysics(),
-    //     itemCount: friends.length,
-    //     itemBuilder: (context, index) {
-    //       return FriendWidget(
-    //           friend: friends[index],
-    //           isFriend: friends[index].isFriend!);
-    //     },
-    //   )
     friendWidget = ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 5,
+      itemCount: friends.length,
       itemBuilder: (context, index) {
         return FriendWidget(
-          friend: ref.read(userProvider),
-          isFriend: true,
-          onAddFriend: () async {},
-        );
+            friend: friends[index],
+            isFriend: friends[index].isFriend!,
+            onAddFriend: () async {
+              _onAddFriend(friends[index].username!);
+            });
       },
     );
   }
