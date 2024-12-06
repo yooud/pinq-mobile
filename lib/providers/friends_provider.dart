@@ -27,6 +27,26 @@ class FriendsNotifier extends StateNotifier<List<User>> {
       rethrow;
     }
   }
+
+  Future<void> sendFriendRequest(String username) async {
+    final apiService = ref.read(apiServiceProvider);
+
+    try {
+      await apiService.sendFriendRequest(username);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<User>> getFriendRequests() async {
+    final apiService = ref.read(apiServiceProvider);
+
+    try {
+      return await apiService.getFriendRequests();
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final friendsProvider = StateNotifierProvider<FriendsNotifier, List<User>>(

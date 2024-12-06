@@ -6,8 +6,9 @@ import 'package:pinq/widgets/shiny_button.dart';
 class FriendWidget extends StatelessWidget {
   final User friend;
   final bool isFriend;
+  final Future<void> Function() onAddFriend;
 
-  const FriendWidget({required this.friend, required this.isFriend, super.key});
+  const FriendWidget({required this.friend, required this.isFriend, required this.onAddFriend, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,9 @@ class FriendWidget extends StatelessWidget {
             backgroundColor: ourPinkColor,
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: isFriend
+                ? () {}
+                : onAddFriend,
             icon: isFriend
                 ? const Icon(Icons.chat_bubble)
                 : const Icon(Icons.person_add),

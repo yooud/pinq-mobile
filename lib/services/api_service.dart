@@ -233,7 +233,40 @@ class ApiService {
     await fire.FirebaseAuth.instance.signOut();
   }
 
-  Future<List<User>> getFriends() async {
+
+
+  Future<User> getUserByUsername(String username) async {
+    final response = await http.get(
+      Uri.parse('https://api.pinq.yooud.org/profile/$username'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> userJson = jsonDecode(response.body);
+      return User.friendFromJson(userJson);
+    }
+    if (response.statusCode == 404) {
+      throw Exception("User not found");
+    } else {
+      throw Exception("Failed to fetch user data");
+    }
+  }
+
+  
+  Future<void> sendFriendRequest(String username) async {
+    final response = await http.post(
+      Uri.parse('https://api.pinq.yooud.org/friends/$username'),
+      headers: _headers,
+    );
+    if (response.statusCode == 404) {
+      throw Exception(jsonDecode(response.body)['message']);
+    } 
+    if (response.statusCode == 500) {
+      throw Exception("Failed to fetch user data");
+    }
+  }
+
+    Future<List<User>> getFriends() async {
     final response = await http.get(
       Uri.parse('https://api.pinq.yooud.org/profile/me/friends'),
       headers: _headers,
@@ -246,18 +279,17 @@ class ApiService {
       throw Exception("Failed to fetch friends");
     }
   }
-
-  Future<User> getUserByUsername(String username) async {
+    Future<List<User>> getFriendRequests() async {
     final response = await http.get(
-      Uri.parse('https://api.pinq.yooud.org/profile/$username'),
+      Uri.parse('https://api.pinq.yooud.org/friends'),
       headers: _headers,
     );
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> userJson = jsonDecode(response.body);
-      return User.friendFromJson(userJson);
+      final List<dynamic> friendsJson = jsonDecode(response.body)['data'];
+      return friendsJson.map((e) => User.friendFromJson(e)).toList();
     } else {
-      throw Exception("Failed to fetch user data");
+      throw Exception("Failed to fetch friends");
     }
   }
 }
