@@ -28,11 +28,11 @@ class FriendsNotifier extends StateNotifier<List<User>> {
     }
   }
 
-  Future<void> sendFriendRequest(String username) async {
+  Future<String> sendFriendRequest(String username) async {
     final apiService = ref.read(apiServiceProvider);
 
     try {
-      await apiService.sendFriendRequest(username);
+      return await apiService.sendFriendRequest(username);
     } catch (e) {
       rethrow;
     }

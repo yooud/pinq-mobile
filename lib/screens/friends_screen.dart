@@ -18,26 +18,33 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   User? searchedUser;
   String enteredUsername = '';
 
+  bool isCheckingFriendRequests = false;
+
   Widget? friendWidget;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-    friends = ref.read(friendsProvider);
-    friendWidget = ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: friends.length,
-      itemBuilder: (context, index) {
-        return FriendWidget(
+    friends = ref.watch(friendsProvider);
+
+    _onShowFriends();
+  }
+
+  void _onShowFriends() {
+    setState(() {
+      friendWidget = ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: friends.length,
+        itemBuilder: (context, index) {
+          return FriendWidget(
             friend: friends[index],
             isFriend: friends[index].isFriend!,
-            onAddFriend: () async {
-              _onAddFriend(friends[index].username!);
-            });
-      },
-    );
+          );
+        },
+      );
+    });
   }
 
   void _validateUsername(BuildContext context) async {
@@ -59,15 +66,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     }
   }
 
-  Future<void> _onAddFriend(String username) async {
-    try {
-      await ref.read(friendsProvider.notifier).sendFriendRequest(username);
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _onSeeFriendRequests() async {
+  Future<void> _onShowFriendRequests() async {
     try {
       List<User> friendRequests =
           await ref.read(friendsProvider.notifier).getFriendRequests();
@@ -80,9 +79,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
             return FriendWidget(
               friend: friendRequests[index],
               isFriend: false,
-              onAddFriend: () async {
-                _onAddFriend(friendRequests[index].username!);
-              },
             );
           },
         );
@@ -96,66 +92,79 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+
     if (searchedUser != null) {
       friendWidget = FriendWidget(
         friend: searchedUser!,
         isFriend: searchedUser!.isFriend!,
-        onAddFriend: () async {
-          _onAddFriend(searchedUser!.username!);
-        },
       );
     }
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (String s) {
-                      enteredUsername = s;
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Enter a username',
-                      hintStyle: Theme.of(context)
-                          .textTheme
-                          .labelMedium!
-                          .copyWith(fontSize: 20),
-                      border: const OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: ourPinkColor),
+    return LayoutBuilder(builder: (ctx, constraints) {
+      return SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, keyboardSpace + 20),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (String s) {
+                        enteredUsername = s;
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Enter a username',
+                        hintStyle: Theme.of(context)
+                            .textTheme
+                            .labelMedium!
+                            .copyWith(fontSize: 20),
+                        border: const OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: ourPinkColor),
+                        ),
+                        errorText: displayNameError,
                       ),
-                      errorText: displayNameError,
                     ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  onPressed: () {
-                    _validateUsername(context);
-                  },
-                  icon: const Icon(Icons.search),
-                  iconSize: 35,
-                ),
-                const SizedBox(width: 20),
-                IconButton(
-                  onPressed: () async {
-                    await _onSeeFriendRequests();
-                  },
-                  icon: const Icon(Icons.person_add),
-                  iconSize: 35,
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            friendWidget!,
-          ],
+                  const SizedBox(width: 20),
+                  IconButton(
+                    onPressed: () {
+                      _validateUsername(context);
+                    },
+                    icon: const Icon(Icons.search),
+                    iconSize: 35,
+                  ),
+                  const SizedBox(width: 20),
+                  IconButton(
+                    onPressed: isCheckingFriendRequests
+                        ? () {
+                            setState(() {
+                              isCheckingFriendRequests = false;
+                            });
+                            _onShowFriends();
+                          }
+                        : () async {
+                            setState(() {
+                              isCheckingFriendRequests = true;
+                            });
+                            await _onShowFriendRequests();
+                          },
+                    icon: isCheckingFriendRequests
+                        ? const Icon(Icons.arrow_back_ios_new_rounded)
+                        : const Icon(Icons.person_add),
+                    iconSize: 35,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              friendWidget!,
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

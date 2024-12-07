@@ -233,8 +233,6 @@ class ApiService {
     await fire.FirebaseAuth.instance.signOut();
   }
 
-
-
   Future<User> getUserByUsername(String username) async {
     final response = await http.get(
       Uri.parse('https://api.pinq.yooud.org/profile/$username'),
@@ -252,21 +250,22 @@ class ApiService {
     }
   }
 
-  
-  Future<void> sendFriendRequest(String username) async {
+  Future<String> sendFriendRequest(String username) async {
     final response = await http.post(
       Uri.parse('https://api.pinq.yooud.org/friends/$username'),
       headers: _headers,
     );
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      return responseData['status'];
+    }
     if (response.statusCode == 404) {
       throw Exception(jsonDecode(response.body)['message']);
-    } 
-    if (response.statusCode == 500) {
-      throw Exception("Failed to fetch user data");
     }
+    throw Exception("Failed to fetch user data");
   }
 
-    Future<List<User>> getFriends() async {
+  Future<List<User>> getFriends() async {
     final response = await http.get(
       Uri.parse('https://api.pinq.yooud.org/profile/me/friends'),
       headers: _headers,
@@ -279,7 +278,8 @@ class ApiService {
       throw Exception("Failed to fetch friends");
     }
   }
-    Future<List<User>> getFriendRequests() async {
+
+  Future<List<User>> getFriendRequests() async {
     final response = await http.get(
       Uri.parse('https://api.pinq.yooud.org/friends'),
       headers: _headers,

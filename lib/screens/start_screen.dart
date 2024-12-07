@@ -49,6 +49,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     ).then((_) {
       _setPuck();
       _setCameraPosition();
+      ref.read(friendsProvider.notifier).fetchFriends();
     });
   }
 
@@ -220,7 +221,11 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       isScrollControlled: true,
       context: context,
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
-      builder: (ctx) => const FriendsScreen(),
+      builder: (ctx) => SizedBox(
+        height:
+            MediaQuery.of(ctx).size.height * 0.75,
+        child: const FriendsScreen(),
+      ),
     );
   }
 
@@ -228,7 +233,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     const url = 'https://pinq.yooud.org';
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
-      await launchUrl(uri,mode: LaunchMode.externalApplication);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       throw 'Could not launch $url';
     }
