@@ -6,11 +6,13 @@ class ShinyText extends StatefulWidget {
     required this.text,
     this.style,
     this.colors,
+    this.reverseAnimation = false,
   });
 
   final String text;
   final TextStyle? style;
   final List<Color>? colors;
+  final bool reverseAnimation;
 
   @override
   State<ShinyText> createState() => _ShinyTextState();
@@ -37,25 +39,29 @@ class _ShinyTextState extends State<ShinyText> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return ShaderMask(
-          shaderCallback: (Rect bounds) {
-            return LinearGradient(
-              colors: widget.colors ??
-                  [
-                    Theme.of(context).colorScheme.primary,
-                    const Color.fromARGB(255, 255, 0, 242),
-                    Theme.of(context).colorScheme.primary,
-                  ],
-              stops: const [0.0, 0.5, 1.0],
-              begin: Alignment(-3 + _controller.value * 4, 0.0),
-              end: Alignment(-1 + _controller.value * 4, 0.0),
-            ).createShader(bounds);
-          },
+        animation: _controller,
+        builder: (context, child) {
+          return ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return LinearGradient(
+                colors: widget.colors ?? 
+                    [
+                      Theme.of(context).colorScheme.primary,
+                      const Color.fromARGB(255, 255, 0, 242),
+                      Theme.of(context).colorScheme.primary,
+                    ],
+                stops: const [0.0, 0.5, 1.0],
+                begin: widget.reverseAnimation
+                    ? Alignment(1 - _controller.value * 4, 0.0)
+                    : Alignment(-3 + _controller.value * 4, 0.0),
+                end: widget.reverseAnimation
+                    ? Alignment(3 - _controller.value * 4, 0.0)
+                    : Alignment(-1 + _controller.value * 4, 0.0),
+              ).createShader(bounds);
+            },
           child: Text(
             widget.text,
-            style: widget.style ??
+            style: widget.style ?? 
                 const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

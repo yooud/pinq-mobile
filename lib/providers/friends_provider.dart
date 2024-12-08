@@ -47,6 +47,17 @@ class FriendsNotifier extends StateNotifier<List<User>> {
       rethrow;
     }
   }
+
+  Future<void> removeFriend(String username) async {
+    final apiService = ref.read(apiServiceProvider);
+
+    try {
+      await apiService.removeFriend(username);
+      state = List.from(state)..removeWhere((element) => element.username == username);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final friendsProvider = StateNotifierProvider<FriendsNotifier, List<User>>(

@@ -223,7 +223,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => SizedBox(
         height:
-            MediaQuery.of(ctx).size.height * 0.75,
+            MediaQuery.of(ctx).size.height * 0.85,
         child: const FriendsScreen(),
       ),
     );

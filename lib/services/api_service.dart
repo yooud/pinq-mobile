@@ -287,9 +287,24 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final List<dynamic> friendsJson = jsonDecode(response.body)['data'];
-      return friendsJson.map((e) => User.friendFromJson(e)).toList();
+      return friendsJson.map((e) {
+        final user = User.friendFromJson(e);
+        user.isFriend = false;
+        return user;
+      }).toList();
     } else {
       throw Exception("Failed to fetch friends");
+    }
+  }
+
+  Future<void> removeFriend(String username) async {
+    final response = await http.delete(
+      Uri.parse('https://api.pinq.yooud.org/friends/$username'),
+      headers: _headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to remove friend");
     }
   }
 }
