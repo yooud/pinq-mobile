@@ -17,7 +17,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   User? searchedUser;
   String enteredUsername = '';
 
-  Future<void> _validateUsername(BuildContext context) async {
+  Widget? friendWidget;
+  Widget? friendRequestsWidget;
+  Widget? userSearchWidget;
+
+  void _validateUsername(BuildContext context) async {
     try {
       User userResult = await ref
           .read(friendsProvider.notifier)
@@ -25,23 +29,14 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       FocusScope.of(context).unfocus();
       setState(() {
         searchedUser = userResult;
-        displayNameError = null;
       });
+      displayNameError = null;
     } catch (e) {
-      setState(() {
-        displayNameError = e.toString();
-      });
-    }
-  }
-
-  Future<List<User>> _getFriendRequests() async {
-    try {
-      return await ref.read(friendsProvider.notifier).getFriendRequests();
-    } catch (e) {
-      setState(() {
-        displayNameError = e.toString();
-      });
-      return [];
+      setState(
+        () {
+          displayNameError = e.toString();
+        },
+      );
     }
   }
 
@@ -50,6 +45,46 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
 
     List<User> friends = ref.watch(friendsProvider);
+
+    friendWidget = ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: friends.length,
+      itemBuilder: (context, index) {
+        return FriendWidget(
+          friend: friends[index],
+        );
+      },
+    );
+
+    if (searchedUser != null) {
+      userSearchWidget = FriendWidget(
+        friend: searchedUser!,
+      );
+    }
+
+    Future<void> onShowFriendRequests() async {
+      try {
+        List<User> friendRequests =
+            await ref.read(friendsProvider.notifier).getFriendRequests();
+        setState(() {
+          friendRequestsWidget = ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: friendRequests.length,
+            itemBuilder: (context, index) {
+              return FriendWidget(
+                friend: friendRequests[index],
+              );
+            },
+          );
+        });
+      } catch (e) {
+        setState(() {
+          displayNameError = e.toString();
+        });
+      }
+    }
 
     return LayoutBuilder(builder: (ctx, constraints) {
       return SingleChildScrollView(
@@ -64,7 +99,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                   children: [
                     Expanded(
                       child: TextField(
-                        onChanged: (String s) => enteredUsername = s,
+                        onChanged: (String s) {
+                          enteredUsername = s;
+                        },
                         decoration: InputDecoration(
                           hintText: 'Enter a username',
                           hintStyle: Theme.of(context)
@@ -81,64 +118,38 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                     ),
                     const SizedBox(width: 20),
                     IconButton(
-                      onPressed: () => _validateUsername(context),
+                      onPressed: () {
+                        _validateUsername(context);
+                      },
                       icon: const Icon(Icons.search),
-                      iconSize: 30,
+                      iconSize: 35,
                       color: ourPinkColor,
                     ),
                     const SizedBox(width: 20),
                     IconButton(
-                      onPressed: () async {
-                        final requests = await _getFriendRequests();
-                        if (requests.isEmpty) {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (_) => Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Text(
-                                'No friend requests',
-                                style:
-                                    Theme.of(context).textTheme.headlineLarge,
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (_) => SizedBox(
-                            height: MediaQuery.of(ctx).size.height * 0.5,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: requests.length,
-                                itemBuilder: (context, index) {
-                                  return FriendWidget(friend: requests[index]);
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.person_add),
-                      iconSize: 30,
+                      onPressed: friendRequestsWidget == null
+                          ? () async {
+                              await onShowFriendRequests();
+                            }
+                          : () async {
+                              setState(() {
+                                friendRequestsWidget = null;
+                              });
+                            },
+                      icon: friendRequestsWidget == null
+                          ? const Icon(Icons.person_add)
+                          : const Icon(Icons.arrow_back_ios_new_rounded),
+                      iconSize: 35,
                       color: ourPinkColor,
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              if (searchedUser != null) FriendWidget(friend: searchedUser!),
-              if (searchedUser == null)
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: friends.length,
-                  itemBuilder: (context, index) {
-                    return FriendWidget(friend: friends[index]);
-                  },
-                ),
+              if (userSearchWidget != null) userSearchWidget!,
+              if (friendRequestsWidget != null) friendRequestsWidget!,
+              if (userSearchWidget == null && friendRequestsWidget == null)
+                friendWidget!,
             ],
           ),
         ),
