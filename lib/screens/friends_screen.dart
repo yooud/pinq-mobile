@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/models/user.dart';
 import 'package:pinq/providers/friends_provider.dart';
+import 'package:pinq/providers/incoming_provider.dart';
+import 'package:pinq/providers/outgoing_provider.dart';
 import 'package:pinq/widgets/friend_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -16,12 +18,20 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   String? displayNameError;
   User? searchedUser;
   String enteredUsername = '';
+  int selectedButtonIndex = 0;
 
-  Widget? friendWidget;
-  Widget? friendRequestsWidget;
+  Widget? friendsWidget;
+  Widget? incomingFriendRequestsWidget;
+  Widget? outgoingFriendRequestsWidget;
   Widget? userSearchWidget;
 
+
   void _validateUsername(BuildContext context) async {
+    setState(
+      () {
+        selectedButtonIndex = -1;
+      },
+    );
     try {
       User userResult = await ref
           .read(friendsProvider.notifier)
@@ -45,14 +55,67 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
 
     List<User> friends = ref.watch(friendsProvider);
+    List<User> incomingFriendRequests =
+        ref.watch(incomingFriendRequestsProvider);
+    List<User> outgoingFriendRequests =
+        ref.watch(outgoingFriendRequestsProvider);
 
-    friendWidget = ListView.builder(
+    friendsWidget = ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: friends.length,
       itemBuilder: (context, index) {
         return FriendWidget(
-          friend: friends[index],
+            friend: friends[index],
+            onRemoveFriend: () {
+              ref
+                  .read(friendsProvider.notifier)
+                  .removeFriend(friends[index].username!);
+            });
+      },
+    );
+
+    incomingFriendRequestsWidget = ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: incomingFriendRequests.length,
+      itemBuilder: (context, index) {
+        return FriendWidget(
+          friend: incomingFriendRequests[index],
+          requestType: 'incoming',
+          onAcceptFriendRequest: () {
+            ref
+                .read(incomingFriendRequestsProvider.notifier)
+                .acceptFriendRequest(
+                  incomingFriendRequests[index],
+                );
+          },
+          onRejectFriendRequest: () {
+            ref
+                .read(incomingFriendRequestsProvider.notifier)
+                .rejectFriendRequest(
+                  incomingFriendRequests[index].username!,
+                );
+          },
+        );
+      },
+    );
+
+    outgoingFriendRequestsWidget = ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: outgoingFriendRequests.length,
+      itemBuilder: (context, index) {
+        return FriendWidget(
+          friend: outgoingFriendRequests[index],
+          requestType: 'outgoing',
+          onCancelFriendRequest: () {
+            ref
+                .read(outgoingFriendRequestsProvider.notifier)
+                .cancelFriendRequest(
+                  outgoingFriendRequests[index].username!,
+                );
+          },
         );
       },
     );
@@ -60,30 +123,17 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     if (searchedUser != null) {
       userSearchWidget = FriendWidget(
         friend: searchedUser!,
-      );
-    }
-
-    Future<void> onShowFriendRequests() async {
-      try {
-        List<User> friendRequests =
-            await ref.read(friendsProvider.notifier).getFriendRequests();
-        setState(() {
-          friendRequestsWidget = ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: friendRequests.length,
-            itemBuilder: (context, index) {
-              return FriendWidget(
-                friend: friendRequests[index],
+        onAddFriend: () {
+          ref
+              .read(friendsProvider.notifier)
+              .sendFriendRequest(searchedUser!);
+        },
+        onCancelFriendRequest: () {
+          ref.read(outgoingFriendRequestsProvider.notifier).cancelFriendRequest(
+                searchedUser!.username!,
               );
-            },
-          );
-        });
-      } catch (e) {
-        setState(() {
-          displayNameError = e.toString();
-        });
-      }
+        },
+      );
     }
 
     return LayoutBuilder(builder: (ctx, constraints) {
@@ -125,31 +175,114 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                       iconSize: 35,
                       color: ourPinkColor,
                     ),
-                    const SizedBox(width: 20),
-                    IconButton(
-                      onPressed: friendRequestsWidget == null
-                          ? () async {
-                              await onShowFriendRequests();
-                            }
-                          : () async {
-                              setState(() {
-                                friendRequestsWidget = null;
-                              });
-                            },
-                      icon: friendRequestsWidget == null
-                          ? const Icon(Icons.person_add)
-                          : const Icon(Icons.arrow_back_ios_new_rounded),
-                      iconSize: 35,
-                      color: ourPinkColor,
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          displayNameError = null;
+                          selectedButtonIndex = 0;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_pin,
+                            size: 30,
+                            color: selectedButtonIndex == 0
+                                ? ourPinkColor
+                                : Colors.white,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Friends',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: selectedButtonIndex == 0
+                                  ? ourPinkColor
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        setState(() {
+                          selectedButtonIndex = 1;
+                          displayNameError = null;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_add_rounded,
+                            size: 30,
+                            color: selectedButtonIndex == 1
+                                ? ourPinkColor
+                                : Colors.white,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Incoming',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: selectedButtonIndex == 1
+                                  ? ourPinkColor
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        setState(() {
+                          selectedButtonIndex = 2;
+                          displayNameError = null;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_add_alt_1_rounded,
+                            size: 30,
+                            color: selectedButtonIndex == 2
+                                ? ourPinkColor
+                                : Colors.white,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Outgoing',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: selectedButtonIndex == 2
+                                  ? ourPinkColor
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              if (userSearchWidget != null) userSearchWidget!,
-              if (friendRequestsWidget != null) friendRequestsWidget!,
-              if (userSearchWidget == null && friendRequestsWidget == null)
-                friendWidget!,
+              const SizedBox(height: 10),
+              if (userSearchWidget != null && selectedButtonIndex == -1)
+                userSearchWidget!,
+              if ( selectedButtonIndex == 0)
+                friendsWidget!,
+              if (selectedButtonIndex == 1)
+                incomingFriendRequestsWidget!,
+              if (selectedButtonIndex == 2)
+                outgoingFriendRequestsWidget!,
             ],
           ),
         ),

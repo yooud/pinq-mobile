@@ -279,9 +279,26 @@ class ApiService {
     }
   }
 
-  Future<List<User>> getFriendRequests() async {
+  Future<List<User>> getIncomingFriendRequests() async {
     final response = await http.get(
-      Uri.parse('https://api.pinq.yooud.org/friends'),
+      Uri.parse('https://api.pinq.yooud.org/friends?type=incoming'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> friendsJson = jsonDecode(response.body)['data'];
+      return friendsJson.map((e) {
+        final user = User.friendFromJson(e);
+        user.isFriend = false;
+        return user;
+      }).toList();
+    } else {
+      throw Exception("Failed to fetch friends");
+    }
+  }
+  Future<List<User>> getOutgoingFriendRequests() async {
+    final response = await http.get(
+      Uri.parse('https://api.pinq.yooud.org/friends?type=outgoing'),
       headers: _headers,
     );
 

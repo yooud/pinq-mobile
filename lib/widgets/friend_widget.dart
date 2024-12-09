@@ -1,44 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/models/user.dart';
-import 'package:pinq/providers/friends_provider.dart';
 import 'package:pinq/screens/friend_settings_screen.dart';
 import 'package:pinq/widgets/shiny_text.dart';
 
-class FriendWidget extends ConsumerStatefulWidget {
+class FriendWidget extends StatefulWidget {
   final User friend;
+  final String? requestType;
+  final void Function()? onAcceptFriendRequest;
+  final void Function()? onRejectFriendRequest;
+  final void Function()? onCancelFriendRequest;
+  final void Function()? onRemoveFriend;
+  final void Function()? onAddFriend;
 
   const FriendWidget({
     required this.friend,
+    this.onRemoveFriend,
+    this.onAddFriend,
+    this.requestType,
+    this.onAcceptFriendRequest,
+    this.onRejectFriendRequest,
+    this.onCancelFriendRequest,
     super.key,
   });
 
   @override
-  ConsumerState<FriendWidget> createState() => _FriendWidgetState();
+  State<FriendWidget> createState() => _FriendWidgetState();
 }
 
-class _FriendWidgetState extends ConsumerState<FriendWidget> {
-  bool isPending = false;
-
-  Future<void> _onAddFriend() async {
-    try {
-      String status = await ref
-          .read(friendsProvider.notifier)
-          .sendFriendRequest(widget.friend.username!);
-      if (status == 'pending') {
-        setState(() {
-          isPending = true;
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    }
-  }
+class _FriendWidgetState extends State<FriendWidget> {
+  bool isRequestSendedToSearchedUser = false;
 
   void _openFriendSettingsOverlay() async {
     showModalBottomSheet(
@@ -46,12 +37,16 @@ class _FriendWidgetState extends ConsumerState<FriendWidget> {
       isScrollControlled: true,
       context: context,
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
-      builder: (ctx) => FriendSettingsScreen(friend: widget.friend),
+      builder: (ctx) => FriendSettingsScreen(
+        friend: widget.friend,
+        onRemoveFriend: widget.onRemoveFriend!,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -85,24 +80,65 @@ class _FriendWidgetState extends ConsumerState<FriendWidget> {
                   ],
                 ),
               ),
-              if (!widget.friend.isFriend! && isPending)
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.check),
-                  color: ourPinkColor,
-                  iconSize: 30,
-                ),
-              if (!widget.friend.isFriend! && !isPending)
-                IconButton(
-                  onPressed: _onAddFriend,
-                  icon: const Icon(Icons.person_add),
-                  color: ourPinkColor,
-                  iconSize: 30,
-                ),
               if (widget.friend.isFriend!)
                 IconButton(
                   onPressed: _openFriendSettingsOverlay,
                   icon: const Icon(Icons.keyboard_control),
+                  color: ourPinkColor,
+                  iconSize: 30,
+                ),
+              if (widget.requestType == null &&
+                  !widget.friend.isFriend! &&
+                  !isRequestSendedToSearchedUser)
+                IconButton(
+                  onPressed: () {
+                    widget.onAddFriend!();
+                    setState(() {
+                      isRequestSendedToSearchedUser = true;
+                    });
+                  },
+                  icon: const Icon(Icons.person_add),
+                  color: ourPinkColor,
+                  iconSize: 30,
+                ),
+              if (widget.requestType == null &&
+                  !widget.friend.isFriend! &&
+                  isRequestSendedToSearchedUser)
+                IconButton(
+                  onPressed: () {
+                    widget.onCancelFriendRequest!();
+                    setState(() {
+                      isRequestSendedToSearchedUser = false;
+                    });
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                  color: ourPinkColor,
+                  iconSize: 30,
+                ),
+              if (widget.requestType != null &&
+                  widget.requestType == 'incoming')
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: widget.onAcceptFriendRequest,
+                      icon: const Icon(Icons.person_add),
+                      color: ourPinkColor,
+                      iconSize: 30,
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      onPressed: widget.onRejectFriendRequest,
+                      icon: const Icon(Icons.close_rounded),
+                      color: ourPinkColor,
+                      iconSize: 30,
+                    ),
+                  ],
+                ),
+              if (widget.requestType != null &&
+                  widget.requestType == 'outgoing')
+                IconButton(
+                  onPressed: widget.onCancelFriendRequest,
+                  icon: const Icon(Icons.close_rounded),
                   color: ourPinkColor,
                   iconSize: 30,
                 ),

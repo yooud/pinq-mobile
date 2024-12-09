@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
 import 'package:pinq/models/user.dart';
-import 'package:pinq/providers/friends_provider.dart';
 
-class FriendSettingsScreen extends ConsumerStatefulWidget {
-  const FriendSettingsScreen({required this.friend, super.key});
+class FriendSettingsScreen extends StatefulWidget {
+  const FriendSettingsScreen({
+    required this.friend,
+    required this.onRemoveFriend,
+    super.key,
+  });
   final User friend;
+  final void Function() onRemoveFriend;
 
   @override
-  ConsumerState<FriendSettingsScreen> createState() =>
-      _FriendSettingsScreenState();
+  State<FriendSettingsScreen> createState() => _FriendSettingsScreenState();
 }
 
-class _FriendSettingsScreenState extends ConsumerState<FriendSettingsScreen> {
+class _FriendSettingsScreenState extends State<FriendSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -32,7 +34,7 @@ class _FriendSettingsScreenState extends ConsumerState<FriendSettingsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      ref.read(friendsProvider.notifier).removeFriend(widget.friend.username!);
+                      widget.onRemoveFriend();
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(

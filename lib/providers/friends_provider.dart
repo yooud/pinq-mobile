@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/user.dart';
+import 'package:pinq/providers/outgoing_provider.dart';
 import 'package:pinq/services/api_service.dart';
 
 class FriendsNotifier extends StateNotifier<List<User>> {
@@ -7,7 +8,7 @@ class FriendsNotifier extends StateNotifier<List<User>> {
 
   FriendsNotifier(this.ref) : super([]);
 
-  Future<void> fetchFriends() async {
+  Future<void> getFriends() async {
     final apiService = ref.read(apiServiceProvider);
 
     try {
@@ -28,21 +29,14 @@ class FriendsNotifier extends StateNotifier<List<User>> {
     }
   }
 
-  Future<String> sendFriendRequest(String username) async {
+  Future<void> sendFriendRequest(User user) async {
     final apiService = ref.read(apiServiceProvider);
 
     try {
-      return await apiService.sendFriendRequest(username);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<List<User>> getFriendRequests() async {
-    final apiService = ref.read(apiServiceProvider);
-
-    try {
-      return await apiService.getFriendRequests();
+      await apiService.sendFriendRequest(user.username!);
+      ref
+          .read(outgoingFriendRequestsProvider.notifier)
+          .addOutgoingFriendRequest(user);
     } catch (e) {
       rethrow;
     }
@@ -53,10 +47,15 @@ class FriendsNotifier extends StateNotifier<List<User>> {
 
     try {
       await apiService.removeFriend(username);
-      state = List.from(state)..removeWhere((element) => element.username == username);
+      state = List.from(state)
+        ..removeWhere((element) => element.username == username);
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> addFriend(User user) async {
+    state = List.from(state)..add(user);
   }
 }
 
