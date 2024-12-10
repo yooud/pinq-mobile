@@ -25,7 +25,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   Widget? outgoingFriendRequestsWidget;
   Widget? userSearchWidget;
 
-
   void _validateUsername(BuildContext context) async {
     setState(
       () {
@@ -68,9 +67,18 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         return FriendWidget(
             friend: friends[index],
             onRemoveFriend: () {
-              ref
-                  .read(friendsProvider.notifier)
-                  .removeFriend(friends[index].username!);
+              try {
+                ref
+                    .read(friendsProvider.notifier)
+                    .removeFriend(friends[index].username!);
+              } catch (e) {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString())),
+                );
+              }
             });
       },
     );
@@ -110,11 +118,20 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           friend: outgoingFriendRequests[index],
           requestType: 'outgoing',
           onCancelFriendRequest: () {
-            ref
-                .read(outgoingFriendRequestsProvider.notifier)
-                .cancelFriendRequest(
-                  outgoingFriendRequests[index].username!,
-                );
+            try {
+              ref
+                  .read(outgoingFriendRequestsProvider.notifier)
+                  .cancelFriendRequest(
+                    outgoingFriendRequests[index].username!,
+                  );
+            } catch (e) {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
           },
         );
       },
@@ -124,14 +141,32 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       userSearchWidget = FriendWidget(
         friend: searchedUser!,
         onAddFriend: () {
-          ref
-              .read(friendsProvider.notifier)
-              .sendFriendRequest(searchedUser!);
+          try {
+            ref.read(friendsProvider.notifier).sendFriendRequest(searchedUser!);
+          } catch (e) {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.toString())),
+            );
+          }
         },
         onCancelFriendRequest: () {
-          ref.read(outgoingFriendRequestsProvider.notifier).cancelFriendRequest(
-                searchedUser!.username!,
-              );
+          try {
+            ref
+                .read(outgoingFriendRequestsProvider.notifier)
+                .cancelFriendRequest(
+                  searchedUser!.username!,
+                );
+          } catch (e) {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.toString())),
+            );
+          }
         },
       );
     }
@@ -277,12 +312,9 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
               const SizedBox(height: 10),
               if (userSearchWidget != null && selectedButtonIndex == -1)
                 userSearchWidget!,
-              if ( selectedButtonIndex == 0)
-                friendsWidget!,
-              if (selectedButtonIndex == 1)
-                incomingFriendRequestsWidget!,
-              if (selectedButtonIndex == 2)
-                outgoingFriendRequestsWidget!,
+              if (selectedButtonIndex == 0) friendsWidget!,
+              if (selectedButtonIndex == 1) incomingFriendRequestsWidget!,
+              if (selectedButtonIndex == 2) outgoingFriendRequestsWidget!,
             ],
           ),
         ),

@@ -259,7 +259,7 @@ class ApiService {
       final responseData = jsonDecode(response.body);
       return responseData['status'];
     }
-    if (response.statusCode == 404) {
+    if (response.statusCode == 404|| response.statusCode == 400) {
       throw Exception(jsonDecode(response.body)['message']);
     }
     throw Exception("Failed to fetch user data");
@@ -321,7 +321,7 @@ class ApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception("Failed to remove friend");
+      throw Exception(jsonDecode(response.body)['message']);
     }
   }
 }
