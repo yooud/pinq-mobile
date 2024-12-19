@@ -15,6 +15,12 @@ class FriendsScreen extends ConsumerStatefulWidget {
 }
 
 class _FriendsScreenState extends ConsumerState<FriendsScreen> {
+  @override
+  void initState(){
+    super.initState();
+    ref.read(friendsProvider.notifier).getFriends();
+  }
+
   String? displayNameError;
   User? searchedUser;
   String enteredUsername = '';

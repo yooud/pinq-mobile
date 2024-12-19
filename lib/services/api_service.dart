@@ -17,6 +17,9 @@ class ApiService {
   String? _firebaseToken;
   String? _sessionToken;
 
+  String? get firebaseToken => _firebaseToken;
+  String? get sessionToken => _sessionToken;
+
   final Map<String, String> _headers = {'Content-Type': 'application/json'};
   final Map<String, Object> _body = {'fcm_token': 'asdfasdf'};
 

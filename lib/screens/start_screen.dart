@@ -1,13 +1,19 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as map;
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:pinq/models/annotation_listener.dart';
+import 'package:pinq/models/user.dart';
 import 'package:pinq/providers/friends_provider.dart';
 import 'package:pinq/providers/incoming_provider.dart';
 import 'package:pinq/providers/outgoing_provider.dart';
+import 'package:pinq/providers/ws_friends_provider.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/friends_screen.dart';
@@ -25,6 +31,94 @@ class StartScreen extends ConsumerStatefulWidget {
 
 class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
+  WebSocketChannel? _channel;
+  Timer? _locationUpdateTimer;
+  final Map<String, User> annotationFriendMap = {};
+  final List<map.PointAnnotation> annotations = [];
+  map.PointAnnotationManager? pointAnnotationManager;
+
+  @override
+  void dispose() {
+    _channel?.sink.close();
+    _locationUpdateTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeWebSocket() async {
+    final apiService = ref.read(apiServiceProvider);
+    await apiService.initializeTokens();
+    final firebaseToken = apiService.firebaseToken;
+    final sessionToken = apiService.sessionToken;
+
+    _channel =
+        WebSocketChannel.connect(Uri.parse('wss://api.pinq.yooud.org/map/ws'));
+
+    _channel!.sink.add(jsonEncode({
+      "type": "auth",
+      "data": {
+        "token": firebaseToken,
+        "session": sessionToken,
+      }
+    }));
+
+    _channel!.stream.listen((message) {
+      final data = jsonDecode(message);
+      if (data['type'] == 'initial') {
+        ref.read(wsFriendsProvider.notifier).setFriends(data['data']);
+        _handleInitialData();
+      } else if (data['type'] == 'move') {
+        _handleMoveData(data['data']);
+      }
+    });
+
+    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 40), (timer) {
+      _sendUserPosition();
+    });
+
+    await _sendUserPosition();
+    _setCameraPosition(
+        ref.read(userProvider).lng!, ref.read(userProvider).lat!);
+  }
+
+  Future<void> _sendUserPosition() async {
+    geo.Position position = await _determinePosition();
+
+    ref.read(userProvider.notifier).updatePosition(
+          position.latitude,
+          position.longitude,
+        );
+
+    _channel!.sink.add(jsonEncode({
+      "type": "update_location",
+      "data": {
+        "location": {
+          "lng": position.longitude,
+          "lat": position.latitude,
+        }
+      }
+    }));
+  }
+
+  void _handleInitialData() {
+    _setUserPuck();
+
+    _setFriendsPucks();
+  }
+
+  void _handleMoveData(Map<String, dynamic> data) {
+    User friend = User.wsFriendFromJson(data);
+    friend = ref.read(wsFriendsProvider.notifier).updateFriendLocation(
+          friend.username!,
+          friend.lat!,
+          friend.lng!,
+        );
+    _setNewFriendPuck(friend);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   Future<bool> _isUserStateComplete() async {
     try {
@@ -49,8 +143,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         );
       },
     ).then((_) {
-      _setPuck();
-      _setCameraPosition();
+      _initializeWebSocket();
       ref.read(friendsProvider.notifier).getFriends();
       ref
           .read(incomingFriendRequestsProvider.notifier)
@@ -71,12 +164,20 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       map.ScaleBarSettings(enabled: false),
     );
 
+    pointAnnotationManager =
+        await mapboxMap.annotations.createPointAnnotationManager();
+
+    pointAnnotationManager!
+        .addOnPointAnnotationClickListener(AnnotationListener(
+      annotationFriendMap: annotationFriendMap,
+      context: context,
+    ));
+
     try {
       if (!(await _isUserStateComplete())) {
         _showOnboardingDialog();
       } else {
-        _setPuck();
-        _setCameraPosition();
+        _initializeWebSocket();
         ref.read(friendsProvider.notifier).getFriends();
         ref
             .read(incomingFriendRequestsProvider.notifier)
@@ -90,7 +191,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     }
   }
 
-  void _setPuck() async {
+  void _setUserPuck() async {
     Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(ref
             .watch(userProvider)
             .pictureUrl ??
@@ -105,20 +206,78 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             topImage: circleAvatar,
           ),
         ),
-        puckBearingEnabled: false,
       ),
     );
   }
 
-  void _setCameraPosition() async {
-    geo.Position position = await _determinePosition();
+  void _setNewFriendPuck(User friend) async {
+    double latitude = friend.lat ?? 10;
+    double longitude = friend.lng ?? 10;
 
+    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(
+        friend.pictureUrl ??
+            'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
+    Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
+
+    map.PointAnnotationOptions pointAnnotationOptions =
+        map.PointAnnotationOptions(
+      geometry: map.Point(coordinates: map.Position(longitude, latitude)),
+      image: circleAvatar,
+    );
+
+    String annotationId = annotationFriendMap.entries
+        .firstWhere((entry) => entry.value.username == friend.username)
+        .key;
+    for (var annotation in annotations) {
+      print(annotation.id);
+    }
+
+    await pointAnnotationManager!.delete(
+      annotations.firstWhere(
+        (a) => a.id == annotationId,
+      ),
+    );
+
+    annotations.removeWhere((a) => a.id == annotationId);
+    annotationFriendMap.remove(annotationId);
+
+    final pointAnnotation =
+        await pointAnnotationManager!.create(pointAnnotationOptions);
+    annotations.add(pointAnnotation);
+    annotationFriendMap[pointAnnotation.id] = friend;
+  }
+
+  void _setFriendsPucks() async {
+    List<User> friends = ref.read(wsFriendsProvider);
+
+    for (int i = 0; i < friends.length; i++) {
+      double latitude = friends[i].lat ?? 10;
+      double longitude = friends[i].lng ?? 10;
+
+      Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(
+          friends[i].pictureUrl ??
+              'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
+      Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
+
+      map.PointAnnotationOptions pointAnnotationOptions =
+          map.PointAnnotationOptions(
+        geometry: map.Point(coordinates: map.Position(longitude, latitude)),
+        image: circleAvatar,
+      );
+      final pointAnnotation =
+          await pointAnnotationManager!.create(pointAnnotationOptions);
+      annotations.add(pointAnnotation);
+      annotationFriendMap[pointAnnotation.id] = friends[i];
+    }
+  }
+
+  void _setCameraPosition(double longitude, double latitude) async {
     mapboxMap!.easeTo(
       map.CameraOptions(
           center: map.Point(
               coordinates: map.Position(
-            position.longitude,
-            position.latitude,
+            longitude,
+            latitude,
           )),
           zoom: 16,
           bearing: 0,
@@ -204,7 +363,9 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           'Location permissions are permanently denied, we cannot request permissions.');
     }
 
-    return await geo.Geolocator.getCurrentPosition();
+    geo.Position position = await geo.Geolocator.getCurrentPosition();
+
+    return position;
   }
 
   void _openProfileOverlay() {
@@ -215,7 +376,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => const ProfileScreen(),
     ).then((_) {
-      _setPuck();
+      _setUserPuck();
     });
   }
 
@@ -320,7 +481,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
               ),
             ),
             Positioned(
-              top: 210,
+              top: 208,
               right: 16,
               child: Material(
                 color: const Color.fromARGB(155, 255, 170, 198),
@@ -332,6 +493,28 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                     child: Icon(
                       Icons.question_mark_rounded,
                       size: 32,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 35,
+              right: MediaQuery.of(context).size.width / 2 - 32,
+              child: Material(
+                color: const Color.fromARGB(155, 255, 170, 198),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: () {
+                    _setCameraPosition(ref.read(userProvider).lng!,
+                        ref.read(userProvider).lat!);
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Icon(
+                      Icons.not_listed_location_sharp,
+                      size: 48,
                       color: Color.fromARGB(255, 0, 0, 0),
                     ),
                   ),

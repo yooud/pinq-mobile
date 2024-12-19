@@ -94,6 +94,10 @@ class UserNotifier extends StateNotifier<User> {
     }
   }
 
+  Future<void> updatePosition(double lat, double lng) async {
+      state = state.copyWith(lat: lat, lng: lng);
+  } 
+
   void clearUser() {
     state = User();
   }
