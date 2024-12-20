@@ -10,11 +10,11 @@ import 'package:pinq/providers/friends_provider.dart';
 import 'package:pinq/providers/incoming_provider.dart';
 import 'package:pinq/providers/outgoing_provider.dart';
 import 'package:pinq/providers/ws_friends_provider.dart';
+import 'package:pinq/screens/splash_screen.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-
 import 'package:pinq/providers/user_provider.dart';
 import 'package:pinq/screens/friends_screen.dart';
 import 'package:pinq/screens/profile_screen.dart';
@@ -36,6 +36,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   final Map<String, User> annotationFriendMap = {};
   final List<map.PointAnnotation> annotations = [];
   map.PointAnnotationManager? pointAnnotationManager;
+  bool isLoading = true;
 
   @override
   void dispose() {
@@ -74,19 +75,24 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     _locationUpdateTimer = Timer.periodic(const Duration(seconds: 40), (timer) {
       _sendUserPosition();
     });
-
-    await _sendUserPosition();
-    _setCameraPosition(
-        ref.read(userProvider).lng!, ref.read(userProvider).lat!);
   }
 
   Future<void> _sendUserPosition() async {
     geo.Position position = await _determinePosition();
+    User user = ref.read(userProvider);
 
-    ref.read(userProvider.notifier).updatePosition(
-          position.latitude,
-          position.longitude,
-        );
+    if (user.lat == null ||
+        user.lng == null ||
+        user.lat != position.latitude ||
+        user.lng != position.longitude) {
+      ref.read(userProvider.notifier).updatePosition(
+            position.latitude,
+            position.longitude,
+          );
+      if(annotationFriendMap.isNotEmpty) {
+        _setNewUserPuck();
+      }
+    }
 
     _channel!.sink.add(jsonEncode({
       "type": "update_location",
@@ -99,8 +105,8 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     }));
   }
 
-  void _handleInitialData() {
-    _setUserPuck();
+  void _handleInitialData() async {
+    await _setUserPuck();
 
     _setFriendsPucks();
   }
@@ -112,12 +118,9 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           friend.lat!,
           friend.lng!,
         );
-    _setNewFriendPuck(friend);
-  }
-
-  @override
-  void initState() {
-    super.initState();
+    if(annotationFriendMap.containsKey(friend.username)) {
+      _setNewFriendPuck(friend);
+    }
   }
 
   Future<bool> _isUserStateComplete() async {
@@ -142,7 +145,17 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           child: FinishAuth(),
         );
       },
-    ).then((_) {
+    ).then((_) async {
+      pointAnnotationManager =
+          await mapboxMap!.annotations.createPointAnnotationManager();
+
+      pointAnnotationManager!
+          .addOnPointAnnotationClickListener(AnnotationListener(
+        annotationFriendMap: annotationFriendMap,
+        user: ref.read(userProvider),
+        context: context,
+      ));
+
       _initializeWebSocket();
       ref.read(friendsProvider.notifier).getFriends();
       ref
@@ -164,19 +177,18 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       map.ScaleBarSettings(enabled: false),
     );
 
-    pointAnnotationManager =
-        await mapboxMap.annotations.createPointAnnotationManager();
-
-    pointAnnotationManager!
-        .addOnPointAnnotationClickListener(AnnotationListener(
-      annotationFriendMap: annotationFriendMap,
-      context: context,
-    ));
-
     try {
-      if (!(await _isUserStateComplete())) {
-        _showOnboardingDialog();
-      } else {
+      if ((await _isUserStateComplete())) {
+        pointAnnotationManager =
+            await mapboxMap.annotations.createPointAnnotationManager();
+
+        pointAnnotationManager!
+            .addOnPointAnnotationClickListener(AnnotationListener(
+          annotationFriendMap: annotationFriendMap,
+          user: ref.read(userProvider),
+          context: context,
+        ));
+
         _initializeWebSocket();
         ref.read(friendsProvider.notifier).getFriends();
         ref
@@ -185,34 +197,83 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         ref
             .read(outgoingFriendRequestsProvider.notifier)
             .getOutgoingFriendRequests();
+      } else {
+        _showOnboardingDialog();
       }
     } catch (e) {
       return;
     }
   }
 
-  void _setUserPuck() async {
-    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(ref
-            .watch(userProvider)
+  Future<void> _setUserPuck() async {
+    await _sendUserPosition();
+
+    User user = ref.read(userProvider);
+
+    double latitude = user.lat!;
+    double longitude = user.lng!;
+
+    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(user
             .pictureUrl ??
         'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
     Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
 
-    mapboxMap!.location.updateSettings(
-      map.LocationComponentSettings(
-        enabled: true,
-        locationPuck: map.LocationPuck(
-          locationPuck2D: map.LocationPuck2D(
-            topImage: circleAvatar,
-          ),
-        ),
-      ),
+    map.PointAnnotationOptions pointAnnotationOptions =
+        map.PointAnnotationOptions(
+      geometry: map.Point(coordinates: map.Position(longitude, latitude)),
+      image: circleAvatar,
     );
+
+    final pointAnnotation =
+        await pointAnnotationManager!.create(pointAnnotationOptions);
+    annotations.add(pointAnnotation);
+    annotationFriendMap[pointAnnotation.id] = user;
+
+    setState(() {
+      isLoading = false;
+    });
+
+    await _setCameraPosition(ref.read(userProvider).username!);
   }
 
-  void _setNewFriendPuck(User friend) async {
-    double latitude = friend.lat ?? 10;
-    double longitude = friend.lng ?? 10;
+  void _setNewUserPuck() async {
+    User user = ref.read(userProvider);
+    double latitude = user.lat!;
+    double longitude = user.lng!;
+
+    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(user
+            .pictureUrl ??
+        'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
+    Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
+
+    map.PointAnnotationOptions pointAnnotationOptions =
+        map.PointAnnotationOptions(
+      geometry: map.Point(coordinates: map.Position(longitude, latitude)),
+      image: circleAvatar,
+    );
+
+    String annotationId = annotationFriendMap.entries
+        .firstWhere((entry) => entry.value.username == user.username)
+        .key;
+
+    await pointAnnotationManager!.delete(
+      annotations.firstWhere(
+        (a) => a.id == annotationId,
+      ),
+    );
+
+    annotations.removeWhere((a) => a.id == annotationId);
+    annotationFriendMap.remove(annotationId);
+
+    final pointAnnotation =
+        await pointAnnotationManager!.create(pointAnnotationOptions);
+    annotations.add(pointAnnotation);
+    annotationFriendMap[pointAnnotation.id] = user;
+  }
+
+  Future<void> _setNewFriendPuck(User friend) async {
+    double latitude = friend.lat!;
+    double longitude = friend.lng!;
 
     Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(
         friend.pictureUrl ??
@@ -228,9 +289,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     String annotationId = annotationFriendMap.entries
         .firstWhere((entry) => entry.value.username == friend.username)
         .key;
-    for (var annotation in annotations) {
-      print(annotation.id);
-    }
 
     await pointAnnotationManager!.delete(
       annotations.firstWhere(
@@ -251,8 +309,8 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     List<User> friends = ref.read(wsFriendsProvider);
 
     for (int i = 0; i < friends.length; i++) {
-      double latitude = friends[i].lat ?? 10;
-      double longitude = friends[i].lng ?? 10;
+      double latitude = friends[i].lat!;
+      double longitude = friends[i].lng!;
 
       Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(
           friends[i].pictureUrl ??
@@ -271,20 +329,36 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     }
   }
 
-  void _setCameraPosition(double longitude, double latitude) async {
-    mapboxMap!.easeTo(
-      map.CameraOptions(
-          center: map.Point(
-              coordinates: map.Position(
-            longitude,
-            latitude,
-          )),
-          zoom: 16,
-          bearing: 0,
-          pitch: 15),
-      map.MapAnimationOptions(duration: 1000, startDelay: 0),
-    );
-  }
+Future<void> _setCameraPosition(String username) async {
+  double latitude = annotationFriendMap.entries
+      .firstWhere((entry) => entry.value.username == username)
+      .value
+      .lat!;
+  double longitude = annotationFriendMap.entries
+      .firstWhere((entry) => entry.value.username == username)
+      .value
+      .lng!;
+
+  var position = map.Point(coordinates: map.Position(longitude, latitude));
+
+  await mapboxMap!.easeTo(
+    map.CameraOptions(
+      center: position,
+      zoom: 1,
+    ),
+    map.MapAnimationOptions(duration: 2000, startDelay: 0),
+  );
+
+  await Future.delayed(const Duration(milliseconds: 2000));
+
+  await mapboxMap!.easeTo(
+    map.CameraOptions(
+      center: position,
+      zoom: 16,
+    ),
+    map.MapAnimationOptions(duration: 3000, startDelay: 0),
+  );
+}
 
   Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
     final ui.Codec codec = await ui.instantiateImageCodec(imageData);
@@ -398,7 +472,9 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => SizedBox(
         height: MediaQuery.of(ctx).size.height * 0.85,
-        child: const FriendsScreen(),
+        child: FriendsScreen(
+          setCameraPosition: _setCameraPosition,
+        ),
       ),
     );
   }
@@ -423,6 +499,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
               key: const ValueKey('mapWidget'),
               onMapCreated: _onMapCreated,
             ),
+            if (isLoading) const SplashScreen(),
             Positioned(
               top: 16,
               right: 16,
@@ -430,7 +507,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 color: const Color.fromARGB(155, 255, 170, 198),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
-                  onTap: _openProfileOverlay,
+                  onTap: isLoading ? () {} : _openProfileOverlay,
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(
@@ -449,7 +526,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 color: const Color.fromARGB(155, 255, 170, 198),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
-                  onTap: _openSettingseOverlay,
+                  onTap: isLoading ? () {} : _openSettingseOverlay,
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(
@@ -468,7 +545,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 color: const Color.fromARGB(155, 255, 170, 198),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
-                  onTap: _openFriendsOverlay,
+                  onTap: isLoading ? () {} : _openFriendsOverlay,
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(
@@ -487,7 +564,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 color: const Color.fromARGB(155, 255, 170, 198),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
-                  onTap: _openFAQ,
+                  onTap: isLoading ? () {} : _openFAQ,
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(
@@ -506,10 +583,11 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 color: const Color.fromARGB(155, 255, 170, 198),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
-                  onTap: () {
-                    _setCameraPosition(ref.read(userProvider).lng!,
-                        ref.read(userProvider).lat!);
-                  },
+                  onTap: isLoading
+                      ? () {}
+                      : () {
+                          _setCameraPosition(ref.read(userProvider).username!);
+                        },
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Icon(

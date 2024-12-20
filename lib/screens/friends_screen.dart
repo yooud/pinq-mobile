@@ -8,7 +8,11 @@ import 'package:pinq/providers/outgoing_provider.dart';
 import 'package:pinq/widgets/friend_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
-  const FriendsScreen({super.key});
+  const FriendsScreen({
+    required this.setCameraPosition,
+    super.key,
+  });
+  final void Function(String) setCameraPosition;
 
   @override
   ConsumerState<FriendsScreen> createState() => _FriendsScreenState();
@@ -16,7 +20,7 @@ class FriendsScreen extends ConsumerStatefulWidget {
 
 class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   @override
-  void initState(){
+  void initState() {
     super.initState();
     ref.read(friendsProvider.notifier).getFriends();
   }
@@ -71,21 +75,36 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
       itemCount: friends.length,
       itemBuilder: (context, index) {
         return FriendWidget(
-            friend: friends[index],
-            onRemoveFriend: () {
-              try {
-                ref
-                    .read(friendsProvider.notifier)
-                    .removeFriend(friends[index].username!);
-              } catch (e) {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).clearSnackBars();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString())),
-                );
-              }
-            });
+          friend: friends[index],
+          onRemoveFriend: () {
+            try {
+              widget.setCameraPosition(friends[index].username!);
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            } catch (e) {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+          },
+          onMoveToFriend: () {
+            try {
+              ref
+                  .read(friendsProvider.notifier)
+                  .removeFriend(friends[index].username!);
+            } catch (e) {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+          },
+        );
       },
     );
 

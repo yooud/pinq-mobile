@@ -12,11 +12,13 @@ class FriendWidget extends StatefulWidget {
   final void Function()? onCancelFriendRequest;
   final void Function()? onRemoveFriend;
   final void Function()? onAddFriend;
+  final void Function()? onMoveToFriend;
 
   const FriendWidget({
     required this.friend,
     this.onRemoveFriend,
     this.onAddFriend,
+    this.onMoveToFriend,
     this.requestType,
     this.onAcceptFriendRequest,
     this.onRejectFriendRequest,
@@ -40,6 +42,7 @@ class _FriendWidgetState extends State<FriendWidget> {
       builder: (ctx) => FriendSettingsScreen(
         friend: widget.friend,
         onRemoveFriend: widget.onRemoveFriend!,
+        onMoveToFriend: widget.onMoveToFriend!,
       ),
     );
   }
