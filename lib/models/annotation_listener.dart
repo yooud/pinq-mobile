@@ -10,19 +10,19 @@ class AnnotationListener implements OnPointAnnotationClickListener {
       required this.user,
       required this.context});
 
-  final Map<String, User> annotationFriendMap;
+  final Map<String, int> annotationFriendMap;
   final User user;
   final BuildContext context;
 
   @override
   void onPointAnnotationClick(PointAnnotation annotation) {
-    final friend = annotationFriendMap[annotation.id];
+    final friendId = annotationFriendMap[annotation.id];
 
-    if (friend == null) {
+    if (friendId == null) {
       return;
     }
 
-    if (friend.username == user.username) {
+    if (friendId == user.id) {
       showModalBottomSheet(
         useSafeArea: true,
         isScrollControlled: true,
@@ -38,7 +38,7 @@ class AnnotationListener implements OnPointAnnotationClickListener {
       isScrollControlled: true,
       context: context,
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
-      builder: (ctx) => FriendProfileScreen(friend: friend),
+      builder: (ctx) => FriendProfileScreen(friendId: friendId),
     );
   }
 }

@@ -33,7 +33,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   map.MapboxMap? mapboxMap;
   WebSocketChannel? _channel;
   Timer? _locationUpdateTimer;
-  final Map<String, User> annotationFriendMap = {};
+  final Map<String, int> annotationFriendMap = {};
   final List<map.PointAnnotation> annotations = [];
   map.PointAnnotationManager? pointAnnotationManager;
   bool isLoading = true;
@@ -62,19 +62,39 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       }
     }));
 
-    _channel!.stream.listen((message) {
-      final data = jsonDecode(message);
-      if (data['type'] == 'initial') {
-        ref.read(wsFriendsProvider.notifier).setFriends(data['data']);
-        _handleInitialData();
-      } else if (data['type'] == 'move') {
-        _handleMoveData(data['data']);
-      }
-    });
+    _channel!.stream.listen(
+      (message) async {
+        final data = jsonDecode(message);
+        if (data['type'] == 'initial') {
+          await ref.read(wsFriendsProvider.notifier).setFriends(data['data']);
+          await _handleInitialData();
+          return;
+        }
+        if (data['type'] == 'move') {
+          await _handleMoveData(data['data']);
+          return;
+        }
+        if (data['type'] == 'profile_updated') {
+          await _handleUpdatePicture(data['data']);
+          return;
+        }
+        if (data['type'] == 'new_friend') {
+          await _addFriendToWS(User.wsFriendFromJson(data['data']));
+          return;
+        }
+        if (data['type'] == 'friend_removed') {
+          await _removeFriendFromWS(data['data']);
+          return;
+        }
+      },
+    );
 
-    _locationUpdateTimer = Timer.periodic(const Duration(seconds: 40), (timer) {
-      _sendUserPosition();
-    });
+    _locationUpdateTimer = Timer.periodic(
+      const Duration(seconds: 40),
+      (timer) {
+        _sendUserPosition();
+      },
+    );
   }
 
   Future<void> _sendUserPosition() async {
@@ -89,8 +109,8 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             position.latitude,
             position.longitude,
           );
-      if(annotationFriendMap.isNotEmpty) {
-        _setNewUserPuck();
+      if (annotationFriendMap.isNotEmpty) {
+        await _setNewUserPuck();
       }
     }
 
@@ -105,21 +125,39 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     }));
   }
 
-  void _handleInitialData() async {
+  Future<void> _handleInitialData() async {
     await _setUserPuck();
 
-    _setFriendsPucks();
+    await _setFriendsPucks();
   }
 
-  void _handleMoveData(Map<String, dynamic> data) {
+  Future<void> _handleUpdatePicture(Map<String, dynamic> data) async {
+    User newData = User.wsFriendFromJson(data);
+    User user = ref.read(userProvider);
+
+    if (user.id == newData.id && user.pictureUrl != newData.pictureUrl) {
+      await _setNewUserPuck();
+      return;
+    }
+
+    User friend = ref.read(wsFriendsProvider).firstWhere((friend) => friend.id == newData.id);
+
+    if (newData.pictureUrl != friend.pictureUrl) {
+      friend.pictureUrl = newData.pictureUrl;
+      await _setNewFriendPuck(friend);
+      return;
+    }
+  }
+
+  Future<void> _handleMoveData(Map<String, dynamic> data) async {
     User friend = User.wsFriendFromJson(data);
-    friend = ref.read(wsFriendsProvider.notifier).updateFriendLocation(
-          friend.username!,
+    friend = await ref.read(wsFriendsProvider.notifier).updateFriendLocation(
+          friend.id!,
           friend.lat!,
           friend.lng!,
         );
-    if(annotationFriendMap.containsKey(friend.username)) {
-      _setNewFriendPuck(friend);
+    if (annotationFriendMap.containsValue(friend.id)) {
+      await _setNewFriendPuck(friend);
     }
   }
 
@@ -156,7 +194,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
         context: context,
       ));
 
-      _initializeWebSocket();
+      await _initializeWebSocket();
       ref.read(friendsProvider.notifier).getFriends();
       ref
           .read(incomingFriendRequestsProvider.notifier)
@@ -189,7 +227,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           context: context,
         ));
 
-        _initializeWebSocket();
+        await _initializeWebSocket();
         ref.read(friendsProvider.notifier).getFriends();
         ref
             .read(incomingFriendRequestsProvider.notifier)
@@ -227,16 +265,16 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final pointAnnotation =
         await pointAnnotationManager!.create(pointAnnotationOptions);
     annotations.add(pointAnnotation);
-    annotationFriendMap[pointAnnotation.id] = user;
+    annotationFriendMap[pointAnnotation.id] = user.id!;
 
     setState(() {
       isLoading = false;
     });
 
-    await _setCameraPosition(ref.read(userProvider).username!);
+    await _setCameraPosition(ref.read(userProvider).id!);
   }
 
-  void _setNewUserPuck() async {
+  Future<void> _setNewUserPuck() async {
     User user = ref.read(userProvider);
     double latitude = user.lat!;
     double longitude = user.lng!;
@@ -253,7 +291,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
 
     String annotationId = annotationFriendMap.entries
-        .firstWhere((entry) => entry.value.username == user.username)
+        .firstWhere((entry) => entry.value == user.id)
         .key;
 
     await pointAnnotationManager!.delete(
@@ -268,7 +306,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final pointAnnotation =
         await pointAnnotationManager!.create(pointAnnotationOptions);
     annotations.add(pointAnnotation);
-    annotationFriendMap[pointAnnotation.id] = user;
+    annotationFriendMap[pointAnnotation.id] = user.id!;
   }
 
   Future<void> _setNewFriendPuck(User friend) async {
@@ -287,7 +325,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     );
 
     String annotationId = annotationFriendMap.entries
-        .firstWhere((entry) => entry.value.username == friend.username)
+        .firstWhere((entry) => entry.value == friend.id)
         .key;
 
     await pointAnnotationManager!.delete(
@@ -302,10 +340,47 @@ class _StartScreenState extends ConsumerState<StartScreen> {
     final pointAnnotation =
         await pointAnnotationManager!.create(pointAnnotationOptions);
     annotations.add(pointAnnotation);
-    annotationFriendMap[pointAnnotation.id] = friend;
+    annotationFriendMap[pointAnnotation.id] = friend.id!;
   }
 
-  void _setFriendsPucks() async {
+  Future<void> _addFriendToWS(User friend) async {
+    double latitude = friend.lat!;
+    double longitude = friend.lng!;
+    ref.read(wsFriendsProvider.notifier).addFriend(friend);
+
+    Uint8List imageData = await ref.read(apiServiceProvider).downloadPicture(
+        friend.pictureUrl ??
+            'https://i1.sndcdn.com/artworks-ya3Fpvi7y6zcqjGP-QiF6ng-t500x500.jpg');
+    Uint8List circleAvatar = await _cropToCircleAndResize(imageData);
+
+    map.PointAnnotationOptions pointAnnotationOptions =
+        map.PointAnnotationOptions(
+      geometry: map.Point(coordinates: map.Position(longitude, latitude)),
+      image: circleAvatar,
+    );
+
+    final pointAnnotation =
+        await pointAnnotationManager!.create(pointAnnotationOptions);
+    annotations.add(pointAnnotation);
+    annotationFriendMap[pointAnnotation.id] = friend.id!;
+  }
+
+  Future<void> _removeFriendFromWS(int friendId) async {
+    String annotationId = annotationFriendMap.entries
+        .firstWhere((entry) => entry.value == friendId)
+        .key;
+
+    await pointAnnotationManager!.delete(
+      annotations.firstWhere(
+        (a) => a.id == annotationId,
+      ),
+    );
+
+    annotations.removeWhere((a) => a.id == annotationId);
+    annotationFriendMap.remove(annotationId);
+  }
+
+  Future<void> _setFriendsPucks() async {
     List<User> friends = ref.read(wsFriendsProvider);
 
     for (int i = 0; i < friends.length; i++) {
@@ -325,40 +400,63 @@ class _StartScreenState extends ConsumerState<StartScreen> {
       final pointAnnotation =
           await pointAnnotationManager!.create(pointAnnotationOptions);
       annotations.add(pointAnnotation);
-      annotationFriendMap[pointAnnotation.id] = friends[i];
+      annotationFriendMap[pointAnnotation.id] = friends[i].id!;
     }
   }
 
-Future<void> _setCameraPosition(String username) async {
-  double latitude = annotationFriendMap.entries
-      .firstWhere((entry) => entry.value.username == username)
-      .value
-      .lat!;
-  double longitude = annotationFriendMap.entries
-      .firstWhere((entry) => entry.value.username == username)
-      .value
-      .lng!;
+  Future<void> _setCameraPosition(int id) async {
+    double latitude;
+    double longitude;
+    if (ref.read(userProvider).id == id) {
+      latitude = ref.read(userProvider).lat!;
+      longitude = ref.read(userProvider).lng!;
 
-  var position = map.Point(coordinates: map.Position(longitude, latitude));
+      var position = map.Point(coordinates: map.Position(longitude, latitude));
 
-  await mapboxMap!.easeTo(
-    map.CameraOptions(
-      center: position,
-      zoom: 1,
-    ),
-    map.MapAnimationOptions(duration: 2000, startDelay: 0),
-  );
+      await mapboxMap!.easeTo(
+        map.CameraOptions(
+          center: position,
+          zoom: 16,
+        ),
+        map.MapAnimationOptions(duration: 2000, startDelay: 0),
+      );
+    } else {
+      User friend =
+          ref.read(wsFriendsProvider).firstWhere((friend) => friend.id == id);
+      latitude = friend.lat!;
+      longitude = friend.lng!;
 
-  await Future.delayed(const Duration(milliseconds: 2000));
+      var position = map.Point(coordinates: map.Position(longitude, latitude));
 
-  await mapboxMap!.easeTo(
-    map.CameraOptions(
-      center: position,
-      zoom: 16,
-    ),
-    map.MapAnimationOptions(duration: 3000, startDelay: 0),
-  );
-}
+      await mapboxMap!.easeTo(
+        map.CameraOptions(
+          center: position,
+          zoom: 16,
+        ),
+        map.MapAnimationOptions(duration: 2000, startDelay: 0),
+      );
+    }
+
+    var position = map.Point(coordinates: map.Position(longitude, latitude));
+
+    await mapboxMap!.easeTo(
+      map.CameraOptions(
+        center: position,
+        zoom: 1,
+      ),
+      map.MapAnimationOptions(duration: 2000, startDelay: 0),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 2000));
+
+    await mapboxMap!.easeTo(
+      map.CameraOptions(
+        center: position,
+        zoom: 16,
+      ),
+      map.MapAnimationOptions(duration: 3000, startDelay: 0),
+    );
+  }
 
   Future<Uint8List> _cropToCircleAndResize(Uint8List imageData) async {
     final ui.Codec codec = await ui.instantiateImageCodec(imageData);
@@ -449,9 +547,7 @@ Future<void> _setCameraPosition(String username) async {
       context: context,
       backgroundColor: const Color.fromARGB(255, 30, 30, 30),
       builder: (ctx) => const ProfileScreen(),
-    ).then((_) {
-      _setUserPuck();
-    });
+    );
   }
 
   void _openSettingseOverlay() {
@@ -586,7 +682,7 @@ Future<void> _setCameraPosition(String username) async {
                   onTap: isLoading
                       ? () {}
                       : () {
-                          _setCameraPosition(ref.read(userProvider).username!);
+                          _setCameraPosition(ref.read(userProvider).id!);
                         },
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),

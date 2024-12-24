@@ -30,14 +30,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   context, await picker.pickImage(source: ImageSource.gallery));
             },
             child: const Text('Gallery'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(
-                  context, await picker.pickImage(source: ImageSource.camera));
-            },
-            child: const Text('Camera'),
-          ),
+          )
         ],
       ),
     );

@@ -85,7 +85,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: ourPinkColor,
       body: Center(
         child: SingleChildScrollView(
           child: Column(

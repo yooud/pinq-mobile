@@ -1,4 +1,3 @@
-
 import 'package:firebase_auth/firebase_auth.dart' as fire;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -95,8 +94,12 @@ class UserNotifier extends StateNotifier<User> {
   }
 
   Future<void> updatePosition(double lat, double lng) async {
-      state = state.copyWith(lat: lat, lng: lng);
-  } 
+    state = state.copyWith(lat: lat, lng: lng);
+  }
+
+  Future<void> setId(int id) async {
+    state = state.copyWith(id: id);
+  }
 
   void clearUser() {
     state = User();

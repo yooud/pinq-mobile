@@ -6,22 +6,31 @@ class WSFriendsNotifier extends StateNotifier<List<User>> {
   final Ref ref;
   WSFriendsNotifier(this.ref) : super([]);
 
-  void setFriends(List<dynamic> friends) {
-      List<User> allPucksOnMap = friends.map((e) => User.wsFriendFromJson(e)).toList();
-      allPucksOnMap.removeWhere(
-        (friend) => friend.username == ref.read(userProvider).username);
-      state = allPucksOnMap;
+  Future<void> setFriends(List<dynamic> friends) async{
+    List<User> allPucksOnMap =
+        friends.map((e) => User.wsFriendFromJson(e)).toList();
+    if (allPucksOnMap.isNotEmpty) {
+      int userId = allPucksOnMap[allPucksOnMap.length - 1].id!;
+      ref.read(userProvider).id = userId;
+      allPucksOnMap.removeAt(allPucksOnMap.length - 1);
+    }
+    state = allPucksOnMap;
   }
 
-  User updateFriendLocation(String username, double lat, double lng) {
+  User updateFriendLocation(int id, double lat, double lng) {
     state = [
       for (final friend in state)
-        if (friend.username == username)
-          friend.copyWith(lat: lat, lng: lng)
-        else
-          friend
+        if (friend.id == id) friend.copyWith(lat: lat, lng: lng) else friend
     ];
-    return state.firstWhere((friend) => friend.username == username);
+    return state.firstWhere((friend) => friend.id == id);
+  }
+
+  void removeFriend(int id) {
+    state = [...state.where((friend) => friend.id != id)];
+  }
+
+  void addFriend(User friend) {
+    state = [...state, friend];
   }
 }
 

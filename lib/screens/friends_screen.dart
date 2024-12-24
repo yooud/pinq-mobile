@@ -5,6 +5,7 @@ import 'package:pinq/models/user.dart';
 import 'package:pinq/providers/friends_provider.dart';
 import 'package:pinq/providers/incoming_provider.dart';
 import 'package:pinq/providers/outgoing_provider.dart';
+import 'package:pinq/providers/ws_friends_provider.dart';
 import 'package:pinq/widgets/friend_widget.dart';
 
 class FriendsScreen extends ConsumerStatefulWidget {
@@ -12,7 +13,7 @@ class FriendsScreen extends ConsumerStatefulWidget {
     required this.setCameraPosition,
     super.key,
   });
-  final void Function(String) setCameraPosition;
+  final void Function(int) setCameraPosition;
 
   @override
   ConsumerState<FriendsScreen> createState() => _FriendsScreenState();
@@ -23,6 +24,12 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
   void initState() {
     super.initState();
     ref.read(friendsProvider.notifier).getFriends();
+    ref
+        .read(incomingFriendRequestsProvider.notifier)
+        .getIncomingFriendRequests();
+    ref
+        .read(outgoingFriendRequestsProvider.notifier)
+        .getOutgoingFriendRequests();
   }
 
   String? displayNameError;
@@ -78,8 +85,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           friend: friends[index],
           onRemoveFriend: () {
             try {
-              widget.setCameraPosition(friends[index].username!);
-              Navigator.of(context).pop();
+              
+              ref
+                  .read(friendsProvider.notifier)
+                  .removeFriend(friends[index].username!);
               Navigator.of(context).pop();
             } catch (e) {
               Navigator.of(context).pop();
@@ -92,9 +101,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
           },
           onMoveToFriend: () {
             try {
-              ref
-                  .read(friendsProvider.notifier)
-                  .removeFriend(friends[index].username!);
+              int userId = ref.read(wsFriendsProvider).firstWhere((e) => e.username == friends[index].username).id!;
+              widget.setCameraPosition(userId);
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
             } catch (e) {
               Navigator.of(context).pop();
               Navigator.of(context).pop();

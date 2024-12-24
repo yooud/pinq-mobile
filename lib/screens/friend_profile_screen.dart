@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinq/models/our_colors.dart';
-import 'package:pinq/models/user.dart';
+import 'package:pinq/providers/ws_friends_provider.dart';
 
 import 'package:pinq/widgets/shiny_button.dart';
 
-class FriendProfileScreen extends StatelessWidget {
-  const FriendProfileScreen({required this.friend, super.key});
-  final User friend;
+class FriendProfileScreen extends ConsumerWidget {
+  const FriendProfileScreen({required this.friendId, super.key});
+  final int friendId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final friend = ref
+        .read(wsFriendsProvider)
+        .where((friend) => friend.id == friendId)
+        .first;
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -45,8 +50,7 @@ class FriendProfileScreen extends StatelessWidget {
                   ],
                 ),
                 CircleAvatar(
-                  backgroundImage:
-                      NetworkImage(friend.pictureUrl!),
+                  backgroundImage: NetworkImage(friend.pictureUrl!),
                   radius: 50,
                   backgroundColor: ourPinkColor,
                 ),

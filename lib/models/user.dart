@@ -1,5 +1,6 @@
 class User {
   User({
+    this.id,
     this.username,
     this.displayName,
     this.pictureId,
@@ -11,6 +12,7 @@ class User {
     this.lat,
   });
 
+  int? id;
   String? username;
   String? displayName;
   String? pictureId;
@@ -52,6 +54,7 @@ class User {
     }
 
     return User(
+      id: json['id'],
       username: json['username'],
       displayName: json['display_name'],
       pictureUrl: json['profile_picture_url'] ??
@@ -71,6 +74,7 @@ class User {
   }
 
   User copyWith({
+    int? id,
     String? username,
     String? displayName,
     String? pictureId,
@@ -79,6 +83,7 @@ class User {
     double? lat,
   }) {
     return User(
+      id: id ?? this.id,
       username: username ?? this.username,
       displayName: displayName ?? this.displayName,
       pictureId: pictureId ?? this.pictureId,

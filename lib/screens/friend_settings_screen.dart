@@ -36,7 +36,7 @@ class _FriendSettingsScreenState extends State<FriendSettingsScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: 
-                      widget.onRemoveFriend
+                      widget.onMoveToFriend
                     ,
                     style: ElevatedButton.styleFrom(
                       alignment: Alignment.centerLeft,
